@@ -1,8 +1,41 @@
 <template>
   <div>
     <div class="container" :style="containerStyle">
-        <div v-if="isLoading" :style="{ textAlign: 'center', padding: '40px', color: '#5a5c69' }">
-          Loading profile...
+        <!-- Skeleton Loader -->
+        <div v-if="isLoading">
+          <div class="card" :style="cardStyle">
+            <!-- Profile Header Skeleton -->
+            <div :style="profileSectionStyle">
+              <div :style="skeletonAvatarStyle"></div>
+              <div :style="{ flex: 1 }">
+                <div :style="skeletonTitleStyle"></div>
+                <div :style="skeletonTextStyle"></div>
+                <div :style="skeletonTextSmallStyle"></div>
+              </div>
+            </div>
+            
+            <!-- Stats Grid Skeleton -->
+            <div :style="statsGridStyle">
+              <div :style="skeletonStatCardStyle">
+                <div :style="skeletonStatValueStyle"></div>
+                <div :style="skeletonStatLabelStyle"></div>
+              </div>
+              <div :style="skeletonStatCardStyle">
+                <div :style="skeletonStatValueStyle"></div>
+                <div :style="skeletonStatLabelStyle"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Reviews Section Skeleton -->
+          <div class="card" :style="cardStyle">
+            <div :style="skeletonSectionTitleStyle"></div>
+            <div v-for="i in 3" :key="i" :style="skeletonFeedbackItemStyle">
+              <div :style="skeletonStarsStyle"></div>
+              <div :style="skeletonTextStyle"></div>
+              <div :style="skeletonTextStyle"></div>
+            </div>
+          </div>
         </div>
         <div v-else-if="user">
           <!-- Profile Header Card -->
@@ -15,15 +48,36 @@
               />
               <div :style="userInfoStyle">
                 <h1 :style="usernameStyle">{{ displayUsername }}</h1>
-                <div v-if="showCompletedTasks && stats.avgRating" :style="ratingBadgeStyle">
-                  ⭐ {{ stats.avgRating.toFixed(1) }} / 5.0 (as Doer)
-                  <span :style="ratingBadgeSubtextStyle">({{ stats.totalFeedbacks }} {{ stats.totalFeedbacks === 1 ? 'review' : 'reviews' }})</span>
+                
+                <!-- Rating as Doer -->
+                <div v-if="showCompletedTasks && stats.avgRating" :style="ratingContainerStyle">
+                  <div :style="ratingLabelStyle">Rating as Doer:</div>
+                  <div :style="ratingDisplayStyle">
+                    <div :style="starsContainerStyle">
+                      <span v-for="i in 5" :key="i" :style="getProfileStarStyle(i, stats.avgRating)">★</span>
+                    </div>
+                    <span :style="ratingValueStyle">{{ stats.avgRating.toFixed(1) }}</span>
+                    <span :style="ratingCountStyle">({{ stats.totalFeedbacks }} {{ stats.totalFeedbacks === 1 ? 'review' : 'reviews' }})</span>
+                  </div>
                 </div>
-                <div v-if="showPostedTasks && stats.avgRatingAsPoster" :style="ratingBadgeStyle">
-                  ⭐ {{ stats.avgRatingAsPoster.toFixed(1) }} / 5.0 (as Poster)
-                  <span :style="ratingBadgeSubtextStyle">({{ feedbacksAsPoster.length }} {{ feedbacksAsPoster.length === 1 ? 'review' : 'reviews' }} received)</span>
+                
+                <!-- Rating as Poster -->
+                <div v-if="showPostedTasks && stats.avgRatingAsPoster" :style="ratingContainerStyle">
+                  <div :style="ratingLabelStyle">Rating as Poster:</div>
+                  <div :style="ratingDisplayStyle">
+                    <div :style="starsContainerStyle">
+                      <span v-for="i in 5" :key="i" :style="getProfileStarStyle(i, stats.avgRatingAsPoster)">★</span>
+                    </div>
+                    <span :style="ratingValueStyle">{{ stats.avgRatingAsPoster.toFixed(1) }}</span>
+                    <span :style="ratingCountStyle">({{ feedbacksAsPoster.length }} {{ feedbacksAsPoster.length === 1 ? 'review' : 'reviews' }})</span>
+                  </div>
                 </div>
-                <p v-if="(!showCompletedTasks || !stats.avgRating) && (!showPostedTasks || !stats.avgRatingAsPoster)" :style="noReviewsStyle">No reviews yet</p>
+                
+                <!-- No Reviews Message -->
+                <p v-if="(!showCompletedTasks || !stats.avgRating) && (!showPostedTasks || !stats.avgRatingAsPoster)" :style="noReviewsStyle">
+                  <span :style="{ fontSize: '24px', display: 'block', marginBottom: '8px' }">⭐</span>
+                  No reviews yet
+                </p>
               </div>
             </div>
             
@@ -52,7 +106,7 @@
                 </div>
               </div>
               <p v-if="feedback.reviews" :style="feedbackTextStyle">{{ feedback.reviews }}</p>
-              <div :style="feedbackTaskStyle">Task: {{ feedback.task_title }}</div>
+              <!--<div :style="feedbackTaskStyle">Task: {{ feedback.task_title }}</div>-->
             </div>
           </div>
           
@@ -69,7 +123,7 @@
                 </div>
               </div>
               <p v-if="feedback.reviews" :style="feedbackTextStyle">{{ feedback.reviews }}</p>
-              <div :style="feedbackTaskStyle">Task: {{ feedback.task_title }}</div>
+             <!-- <div :style="feedbackTaskStyle">Task: {{ feedback.task_title }}</div> -->
             </div>
           </div>
           
@@ -186,6 +240,12 @@ const getStarStyle = (index, rating) => ({
   fontSize: '20px'
 });
 
+const getProfileStarStyle = (index, rating) => ({
+  color: index <= rating ? '#f6c23e' : '#d1d3e2',
+  fontSize: '24px',
+  marginRight: '2px'
+});
+
 onMounted(async () => {
   try {
     isLoading.value = true;
@@ -242,6 +302,10 @@ const layoutStyles = `
     padding: 32px; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
   }
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
   @media (max-width: 768px) {
     .main-content { 
       margin-left: 0; 
@@ -264,10 +328,14 @@ const cardStyle = { background: '#fff', padding: '32px', borderRadius: '12px', b
 const profileSectionStyle = { display: 'flex', gap: '24px', marginBottom: '32px', alignItems: 'center' };
 const profilePicStyle = { width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' };
 const userInfoStyle = { flex: 1 };
-const usernameStyle = { color: '#2e3a59', fontSize: '24px', marginBottom: '8px' };
-const ratingBadgeStyle = { color: '#2e3a59', fontSize: '16px', marginTop: '8px' };
-const ratingBadgeSubtextStyle = { opacity: 0.8, fontSize: '14px' };
-const noReviewsStyle = { color: '#858796', marginTop: '8px' };
+const usernameStyle = { color: '#2e3a59', fontSize: '24px', marginBottom: '12px' };
+const ratingContainerStyle = { marginBottom: '12px' };
+const ratingLabelStyle = { color: '#858796', fontSize: '13px', marginBottom: '4px', fontWeight: '600' };
+const ratingDisplayStyle = { display: 'flex', alignItems: 'center', gap: '8px' };
+const starsContainerStyle = { display: 'flex', alignItems: 'center' };
+const ratingValueStyle = { color: '#2e3a59', fontSize: '18px', fontWeight: '700' };
+const ratingCountStyle = { color: '#858796', fontSize: '14px' };
+const noReviewsStyle = { color: '#858796', marginTop: '12px', textAlign: 'center', padding: '12px', background: '#f8f9fc', borderRadius: '8px' };
 const statsGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' };
 const statCardStyle = { background: '#f8f9fc', padding: '20px', borderRadius: '8px', textAlign: 'center' };
 const statTitleStyle = { color: '#858796', fontSize: '14px', marginTop: '8px' };
@@ -290,5 +358,83 @@ const emptyStateStyle = { textAlign: 'center', padding: '40px' };
 const emptyStateIconStyle = { fontSize: '48px', marginBottom: '16px' };
 const emptyStateTitleStyle = { color: '#5a5c69', marginBottom: '8px' };
 const emptyStateTextStyle = { fontSize: '16px', color: '#858796' };
+
+// Skeleton loader styles
+const skeletonBase = {
+  background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+  backgroundSize: '1000px 100%',
+  animation: 'shimmer 2s infinite',
+  borderRadius: '8px'
+};
+
+const skeletonAvatarStyle = {
+  ...skeletonBase,
+  width: '120px',
+  height: '120px',
+  borderRadius: '50%'
+};
+
+const skeletonTitleStyle = {
+  ...skeletonBase,
+  height: '32px',
+  width: '200px',
+  marginBottom: '12px'
+};
+
+const skeletonTextStyle = {
+  ...skeletonBase,
+  height: '20px',
+  width: '100%',
+  marginBottom: '8px'
+};
+
+const skeletonTextSmallStyle = {
+  ...skeletonBase,
+  height: '16px',
+  width: '60%',
+  marginBottom: '8px'
+};
+
+const skeletonStatCardStyle = {
+  background: '#f8f9fc',
+  padding: '20px',
+  borderRadius: '8px',
+  textAlign: 'center'
+};
+
+const skeletonStatValueStyle = {
+  ...skeletonBase,
+  height: '32px',
+  width: '60px',
+  margin: '0 auto 8px'
+};
+
+const skeletonStatLabelStyle = {
+  ...skeletonBase,
+  height: '16px',
+  width: '100px',
+  margin: '0 auto'
+};
+
+const skeletonSectionTitleStyle = {
+  ...skeletonBase,
+  height: '28px',
+  width: '250px',
+  marginBottom: '16px'
+};
+
+const skeletonFeedbackItemStyle = {
+  padding: '16px',
+  background: '#f8f9fc',
+  borderRadius: '8px',
+  marginBottom: '12px'
+};
+
+const skeletonStarsStyle = {
+  ...skeletonBase,
+  height: '24px',
+  width: '150px',
+  marginBottom: '8px'
+};
 </script>
 

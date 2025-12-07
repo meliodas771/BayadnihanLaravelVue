@@ -13,16 +13,10 @@ class BroadcastServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Temporarily set default guard to 'web' for broadcasting
-        $originalGuard = config('auth.defaults.guard');
-        config(['auth.defaults.guard' => 'web']);
-        
-        Broadcast::routes(['middleware' => ['web', 'auth:web']]);
+        // Use Sanctum authentication for broadcasting
+        Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
         require base_path('routes/channels.php');
-        
-        // Restore original guard
-        config(['auth.defaults.guard' => $originalGuard]);
     }
 }
 

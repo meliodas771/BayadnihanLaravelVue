@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Task;
 use App\Models\Application;
 use App\Models\Message;
+use App\Events\ReportCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -127,6 +128,13 @@ class ReportController extends Controller
             'task_id' => $data['task_id'] ?? null,
             'status' => 'pending',
         ]);
+
+        // Broadcast the new report to admin dashboard
+        try {
+            event(new ReportCreated($report));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to broadcast new report: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

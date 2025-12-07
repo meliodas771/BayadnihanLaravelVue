@@ -129,9 +129,13 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAPI } from '~/utils/api';
+import { useUser } from '~/composables/useUser';
 
+const router = useRouter();
 const { tasksAPI } = useAPI();
+const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const tasks = ref([]);
 const draftTasks = ref([]);
@@ -140,6 +144,24 @@ const visibleCount = ref(0);
 const isLoading = ref(true);
 
 onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
   await fetchTasks();
 });
 

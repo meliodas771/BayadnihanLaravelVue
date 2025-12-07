@@ -157,6 +157,7 @@ const router = useRouter();
 const route = useRoute();
 const { user, logout: logoutUser, updateUser } = useUser();
 const { authAPI, notificationsAPI, userAPI } = useAPI();
+const { $echo } = useNuxtApp();
 
 const showSettings = ref(false);
 const showLogoutModal = ref(false);
@@ -258,7 +259,22 @@ const fetchUserProfile = async () => {
 
 onMounted(() => {
   fetchUnreadNotifications();
-  const interval = setInterval(fetchUnreadNotifications, 30000);
+  
+  // Set up real-time notification listener
+  if (user.value && user.value.id && $echo) {
+    try {
+      const channel = $echo.channel(`user.${user.value.id}`);
+      
+      channel.listen('.notification.created', (data) => {
+        // Increment the unread count
+        unreadNotificationCount.value++;
+        // Optionally fetch all notifications to update the list
+        fetchUnreadNotifications();
+      });
+    } catch (error) {
+      console.error('Error setting up notification listener:', error);
+    }
+  }
   
   // Fetch user profile if profile_pic is missing
   if (user.value && !user.value.profile_pic) {
@@ -299,14 +315,29 @@ onMounted(() => {
     setBurgerVisibility();
   };
 
+  // Listen for notification read events
+  const handleNotificationRead = () => {
+    fetchUnreadNotifications();
+  };
+
   window.addEventListener('resize', handleResize);
   document.addEventListener('click', handleClickOutside);
+  window.addEventListener('notification-read', handleNotificationRead);
   setBurgerVisibility();
 
   onUnmounted(() => {
     window.removeEventListener('resize', handleResize);
     document.removeEventListener('click', handleClickOutside);
-    clearInterval(interval);
+    window.removeEventListener('notification-read', handleNotificationRead);
+    
+    // Clean up Echo listener
+    if (user.value && user.value.id && $echo) {
+      try {
+        $echo.leave(`user.${user.value.id}`);
+      } catch (error) {
+        console.error('Error cleaning up notification listener:', error);
+      }
+    }
   });
 });
 

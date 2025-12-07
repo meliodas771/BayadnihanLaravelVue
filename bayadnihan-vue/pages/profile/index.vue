@@ -114,8 +114,10 @@
                 <img 
                   class="profile-pic" 
                   :src="profilePicUrl" 
+                  :key="`profile-pic-${user.value?.profile_pic || 'default'}-${profilePicCacheKey}`"
                   alt="Profile"
                   :style="profilePicStyle"
+                  @error="handleImageError"
                 />
               </div>
 
@@ -513,7 +515,7 @@
                   />
                   <div :style="feedbackInfoStyle">
                     <div :style="feedbackHeaderStyle">
-                      <strong :style="feedbackUsernameStyle">{{ feedback.from_username }}</strong>
+                      <strong :style="feedbackUsernameStyle">{{ maskFeedbackUsername(feedback.from_username) }}</strong>
                       <div :style="feedbackRatingStyle">
                         <span v-for="i in 5" :key="i" :style="i <= feedback.rating ? starFilledStyle : starEmptyStyle">
                           {{ i <= feedback.rating ? '⭐' : '☆' }}
@@ -717,10 +719,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUser } from '~/composables/useUser';
 import { useAPI } from '~/utils/api';
 
-const { user: contextUser, updateUser } = useUser();
+const router = useRouter();
+const { user: contextUser, updateUser, isAuthenticated, isLoading: userLoading } = useUser();
 const { userAPI, tasksAPI } = useAPI();
 
 const user = ref(null);
@@ -731,6 +735,7 @@ const success = ref('');
 const isLoading = ref(true);
 const editUsername = ref('');
 const editEmail = ref('');
+const profilePicCacheKey = ref(Date.now());
 const showTrialDetails = ref(false);
 const showSubscriptionModal = ref(false);
 const showPauseModal = ref(false);
@@ -792,9 +797,13 @@ const displayedDoneTasks = computed(() => {
 });
 
 const profilePicUrl = computed(() => {
-  if (imagePreview.value) return imagePreview.value;
+  if (imagePreview.value) {
+    return imagePreview.value;
+  }
   if (user.value?.profile_pic) {
-    return `http://localhost:8000/storage/profile_pics/${user.value.profile_pic}`;
+    // Add cache-busting parameter to force browser to reload the image
+    // Use cache key that updates when profile is refreshed
+    return `http://localhost:8000/api/storage/profile_pics/${user.value.profile_pic}?t=${profilePicCacheKey.value}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value?.username || 'User')}&size=150&background=4e73df&color=fff`;
 });
@@ -807,12 +816,21 @@ const canEditUsername = computed(() => {
   return /^[a-zA-Z]/.test(firstChar);
 });
 
-onMounted(async () => {
+const loadProfile = async (showSkeleton = true) => {
   try {
-    isLoading.value = true;
+    // Only show skeleton on initial load, not on refresh
+    if (showSkeleton) {
+      isLoading.value = true;
+    }
     const response = await userAPI.getProfile();
     const profileData = response.user || response;
     user.value = profileData;
+    
+    // Update cache key to force image refresh
+    profilePicCacheKey.value = Date.now();
+    
+    // Update user in composable to sync with localStorage
+    updateUser(user.value);
     
     stats.value = {
       totalEarnings: response.totalEarnings || 0,
@@ -850,22 +868,45 @@ onMounted(async () => {
       : [];
     
     hasPostedTasks.value = response.has_posted_tasks || false;
-    
-    // Debug logging
-    console.log('Profile feedbacks:', {
-      feedbacksCount: feedbacks.value.length,
-      feedbacksAsPosterCount: feedbacksAsPoster.value.length,
-      rawFeedbacks: response.feedbacks,
-      rawFeedbacksAsPoster: response.feedbacks_as_poster,
-      totalFeedbacks: response.totalFeedbacks,
-      hasPostedTasks: hasPostedTasks.value,
-      feedbacksAsPosterArray: feedbacksAsPoster.value
-    });
   } catch (error) {
     console.error('Error fetching profile:', error);
   } finally {
     isLoading.value = false;
   }
+};
+
+const handleImageError = (event) => {
+  console.error('❌ Profile picture failed to load:', event.target?.src);
+  console.warn('💡 Solution: Please re-upload your profile picture. The file will be saved to the correct location.');
+  
+  // Fallback to default avatar
+  setTimeout(() => {
+    if (event.target) {
+      event.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value?.username || 'User')}&size=150&background=4e73df&color=fff`;
+    }
+  }, 1000);
+};
+
+onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
+  await loadProfile();
 });
 
 const handleFileChange = (e) => {
@@ -924,12 +965,29 @@ const handleProfileUpdate = async () => {
     if (hasProfilePicChange) {
       try {
         const profileResponse = await userAPI.updateProfile({ profile_pic: selectedFile.value });
+        
         if (profileResponse.success || profileResponse.user) {
           profileUpdated = true;
-          user.value = profileResponse.user || user.value;
-          updateUser(user.value);
+          
+          // Update user immediately from response if available
+          if (profileResponse.user) {
+            user.value = { ...user.value, ...profileResponse.user };
+            updateUser(user.value);
+            
+            // Update cache key to force image refresh
+            profilePicCacheKey.value = Date.now();
+          }
+          
+          // Re-fetch the profile to ensure we have the latest data from the server
+          // Add a small delay to ensure file is fully saved on server
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await loadProfile();
+          
+          // Clear preview after profile is loaded to use server URL
+          imagePreview.value = null;
         }
       } catch (error) {
+        console.error('Error updating profile picture:', error);
         success.value = 'Error updating profile picture: ' + (error.message || 'Failed to update profile picture');
         return;
       }
@@ -947,7 +1005,6 @@ const handleProfileUpdate = async () => {
     isEditing.value = false;
     selectedFile.value = null;
     setTimeout(() => {
-      imagePreview.value = null;
       success.value = '';
     }, 3000);
   } catch (error) {
@@ -958,9 +1015,21 @@ const handleProfileUpdate = async () => {
 const handleStartTask = async (taskId) => {
   try {
     await tasksAPI.startTask(taskId);
-    window.location.reload();
+    // Show success message
+    success.value = 'You have started the task! The poster has been notified.';
+    // Refresh profile data without skeleton (no page reload)
+    await loadProfile(false);
+    // Auto-clear message after 5 seconds
+    setTimeout(() => {
+      success.value = '';
+    }, 5000);
+    // Scroll to top to show the message
+    if (process.client) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   } catch (error) {
     console.error('Error starting task:', error);
+    success.value = ' Error starting task: ' + (error.message || 'Failed to start task');
   }
 };
 
@@ -972,21 +1041,46 @@ const handlePauseTask = async () => {
     showPauseModal.value = false;
     pauseReason.value = '';
     selectedTask.value = null;
-    window.location.reload();
+    // Show success message
+    success.value = 'You have paused the task! The poster has been notified.';
+    // Refresh profile data without skeleton (no page reload)
+    await loadProfile(false);
+    // Auto-clear message after 5 seconds
+    setTimeout(() => {
+      success.value = '';
+    }, 5000);
+    // Scroll to top to show the message
+    if (process.client) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   } catch (error) {
     console.error('Error pausing task:', error);
+    success.value = ' Error pausing task: ' + (error.message || 'Failed to pause task');
   }
 };
 
 const handleUpdateCompletion = async () => {
   try {
-    await userAPI.updateTaskCompletion(selectedTask.value, completionPercentage.value);
+    const percentage = completionPercentage.value;
+    await userAPI.updateTaskCompletion(selectedTask.value, percentage);
     showCompletionModal.value = false;
     completionPercentage.value = 0;
     selectedTask.value = null;
-    window.location.reload();
+    // Show success message
+    success.value = `Task completion updated to ${percentage}%! The poster has been notified.`;
+    // Refresh profile data without skeleton (no page reload)
+    await loadProfile(false);
+    // Auto-clear message after 5 seconds
+    setTimeout(() => {
+      success.value = '';
+    }, 5000);
+    // Scroll to top to show the message
+    if (process.client) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   } catch (error) {
     console.error('Error updating completion:', error);
+    success.value = ' Error updating completion: ' + (error.message || 'Failed to update completion');
   }
 };
 
@@ -1187,8 +1281,6 @@ const getCompletionPreviewBarStyle = (percentage) => {
   };
 };
 
-// Styles - This is a large file, so I'll include the essential styles
-// The full styles object would be very long, so I'll create computed styles for dynamic values
 
 const layoutStyles = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1221,6 +1313,9 @@ const layoutStyles = `
     }
     .stats-container {
       width: 100% !important;
+    }
+    .stat-grid {
+      grid-template-columns: 1fr !important;
     }
   }
 `;
@@ -1322,7 +1417,16 @@ const saveButtonStyle = { flex: 1, padding: '12px', background: 'linear-gradient
 const cancelButtonStyle = { flex: 1, padding: '12px', background: '#858796', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' };
 const successStyle = { background: '#d4edda', color: '#155724', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', border: '1px solid #c3e6cb', fontSize: '14px' };
 const statsH3Style = { color: '#2e3a59', marginBottom: '20px', fontSize: '22px' };
-const statGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '24px' };
+const statGridStyle = computed(() => {
+  // Stack on mobile (single column), 2 columns on desktop
+  const columns = (!isMounted.value || windowWidth.value > 768) ? 'repeat(2, 1fr)' : '1fr';
+  return { 
+    display: 'grid', 
+    gridTemplateColumns: columns, 
+    gap: '16px', 
+    marginBottom: '24px' 
+  };
+});
 const statBoxStyle = { background: 'linear-gradient(135deg, #4e73df 0%, #224abe 100%)', padding: '20px', borderRadius: '10px', color: 'white', textAlign: 'center' };
 const statBoxGreenStyle = { ...statBoxStyle, background: 'linear-gradient(135deg, #1cc88a 0%, #13855c 100%)' };
 const statBoxOrangeStyle = { ...statBoxStyle, background: 'linear-gradient(135deg, #f6c23e 0%, #dda20a 100%)' };

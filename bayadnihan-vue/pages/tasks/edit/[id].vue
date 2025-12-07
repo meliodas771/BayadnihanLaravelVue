@@ -178,10 +178,12 @@
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAPI } from '~/utils/api';
+import { useUser } from '~/composables/useUser';
 
 const route = useRoute();
 const router = useRouter();
 const { tasksAPI } = useAPI();
+const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const taskId = route.params.id;
 
@@ -207,6 +209,24 @@ watch(() => formData.value.category, (newCategory) => {
 });
 
 onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
   isLoadingTask.value = true;
   errors.value = [];
   task.value = null;

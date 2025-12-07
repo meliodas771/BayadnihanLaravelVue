@@ -89,9 +89,11 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAPI } from '~/utils/api';
+import { useUser } from '~/composables/useUser';
 
 const router = useRouter();
 const { notificationsAPI } = useAPI();
+const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const notifications = ref([]);
 const isLoading = ref(true);
@@ -102,6 +104,24 @@ const openMenuId = ref(null);
 const windowWidth = ref(process.client ? window.innerWidth : 1024);
 
 onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
   await fetchNotifications();
   // Add click outside listener
   if (process.client) {
@@ -164,6 +184,10 @@ const handleNotificationClick = async (notification) => {
         if (index !== -1) {
           notifications.value[index].read = true;
         }
+        // Emit event to update sidebar badge
+        if (process.client) {
+          window.dispatchEvent(new CustomEvent('notification-read'));
+        }
       } catch (error) {
         console.error('Error marking notification as read:', error);
       }
@@ -177,6 +201,10 @@ const markAsRead = async (id) => {
     await notificationsAPI.markRead(id);
     await fetchNotifications();
     openMenuId.value = null;
+    // Emit event to update sidebar badge
+    if (process.client) {
+      window.dispatchEvent(new CustomEvent('notification-read'));
+    }
   } catch (error) {
     console.error('Error marking as read:', error);
   }
@@ -186,6 +214,10 @@ const markAllRead = async () => {
   try {
     await notificationsAPI.markAllRead();
     await fetchNotifications();
+    // Emit event to update sidebar badge
+    if (process.client) {
+      window.dispatchEvent(new CustomEvent('notification-read'));
+    }
   } catch (error) {
     console.error('Error marking all as read:', error);
   }

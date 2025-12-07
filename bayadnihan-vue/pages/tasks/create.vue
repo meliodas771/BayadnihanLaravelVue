@@ -185,9 +185,11 @@
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAPI } from '~/utils/api';
+import { useUser } from '~/composables/useUser';
 
 const router = useRouter();
 const { tasksAPI } = useAPI();
+const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const formData = ref({
   title: '',
@@ -306,6 +308,22 @@ const handleSubmit = async (isDraft = false) => {
 };
 
 onMounted(() => {
+  // Check authentication - redirect to login if not authenticated
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+        }
+      } else {
+        // User is still loading, check again after a short delay
+        setTimeout(checkAuth, 100);
+      }
+    };
+    
+    checkAuth();
+  }
+  
   if (process.client && showModal.value) {
     const handleClickOutside = (event) => {
       if (showModal.value && event.target.id === 'createTaskModal') {

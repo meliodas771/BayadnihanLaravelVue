@@ -36,6 +36,7 @@ class AuthController extends Controller
 		
 		// Check if user exists and password is correct
 		if ($user && Hash::check($credentials['password'], $user->password)) {
+			
 			// Check if account is active
 			if (!$user->is_active) {
 				RateLimiter::hit($key, 60);

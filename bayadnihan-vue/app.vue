@@ -1,12 +1,21 @@
 <template>
   <div>
     <template v-if="shouldShowLayout">
-      <div :class="mainLayoutClass">
-        <Sidebar v-if="shouldShowSidebar" />
-        <div class="main-content">
-          <NuxtPage />
+      <ClientOnly>
+        <div class="main-layout">
+          <Sidebar v-if="shouldShowSidebar" />
+          <div class="main-content">
+            <NuxtPage />
+          </div>
         </div>
-      </div>
+        <template #fallback>
+          <div class="main-layout">
+            <div class="main-content">
+              <NuxtPage />
+            </div>
+          </div>
+        </template>
+      </ClientOnly>
     </template>
     <template v-else>
       <NuxtPage />
@@ -49,28 +58,25 @@ const shouldShowLayout = computed(() => {
 // This prevents the sidebar from disappearing during page refresh
 const shouldShowSidebar = computed(() => {
   if (!shouldShowLayout.value) return false;
-  // On server, always return false to match initial client render
-  if (!isMounted.value) return false;
-  // On client, check authentication
+  
+  // Check authentication
   if (isAuthenticated.value) return true;
+  
   // During loading, check if there's a token in localStorage
-  if (isLoading.value) {
+  if (process.client && isLoading.value) {
     const token = localStorage.getItem('auth_token');
-    return !!token;
+    if (token) return true;
   }
+  
   return false;
-});
-
-// Compute main layout class to avoid hydration mismatch
-const mainLayoutClass = computed(() => {
-  // On server or before mount, don't add main-layout class
-  if (!isMounted.value || !shouldShowSidebar.value) return '';
-  return 'main-layout';
 });
 
 onMounted(() => {
   isMounted.value = true;
-  loadUser();
+  // Load user immediately to prevent sidebar flicker
+  if (process.client) {
+    loadUser();
+  }
 });
 </script>
 

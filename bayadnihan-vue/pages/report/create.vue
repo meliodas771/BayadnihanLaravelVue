@@ -220,10 +220,12 @@
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAPI } from '~/utils/api';
+import { useUser } from '~/composables/useUser';
 
 const router = useRouter();
 const route = useRoute();
 const { reportsAPI } = useAPI();
+const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const formData = ref({
   reported_username: '',
@@ -243,6 +245,24 @@ const isLoadingInteractedUsers = ref(true);
 const showConfirmationModal = ref(false);
 
 onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
   try {
     await fetchInteractedUsers();
     if (route.query.user) {

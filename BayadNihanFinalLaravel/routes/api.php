@@ -9,8 +9,16 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\TaskController as AdminTaskController;
+use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
 
 // Public routes
+// Serve profile pictures directly from storage
+Route::get('/storage/profile_pics/{filename}', [UserController::class, 'getProfilePicture'])->where('filename', '.*');
+
 Route::post('/login', [AuthController::class, 'login']);
 // curl -X POST http://127.0.0.1:8000/api/login \
 //   -H "Content-Type: application/json" \
@@ -80,6 +88,11 @@ Route::post('/email/verification-notification', [AuthController::class, 'resendV
 // Google OAuth ,redirectToGoogle and handleGoogleCallback moved to web.php for session support
 // Only the complete-registration endpoint stays here as it's called from frontend
 Route::post('/auth/google/complete-registration', [GoogleAuthController::class, 'completeRegistration'])->name('auth.google.complete');
+
+// Broadcasting authentication endpoint for Sanctum
+Route::post('/broadcasting/auth', function (Illuminate\Http\Request $request) {
+    return Illuminate\Support\Facades\Broadcast::auth($request);
+})->middleware('auth:sanctum');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -287,5 +300,38 @@ Route::middleware('auth:sanctum')->group(function () {
     //   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 
     Route::get('/report/interacted-users', [ReportController::class, 'getInteractedUsers']);
+});
+
+// Admin login (public route)
+Route::post('/admin/login', [AdminController::class, 'login'])->name('admin.login');
+
+// Admin routes (no authentication required)
+Route::prefix('admin')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    
+    // Users management
+    Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
+    Route::post('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('admin.users.toggle-status');
+    Route::post('/users/{user}/update-role', [AdminUserController::class, 'updateRole'])->name('admin.users.update-role');
+    
+    // Tasks management
+    Route::get('/tasks', [AdminTaskController::class, 'index'])->name('admin.tasks.index');
+    Route::get('/tasks/{task}', [AdminTaskController::class, 'show'])->name('admin.tasks.show');
+    Route::delete('/tasks/{task}', [AdminTaskController::class, 'destroy'])->name('admin.tasks.destroy');
+    Route::post('/tasks/{task}/update-status', [AdminTaskController::class, 'updateStatus'])->name('admin.tasks.update-status');
+    Route::get('/tasks-statistics', [AdminTaskController::class, 'statistics'])->name('admin.tasks.statistics');
+    
+    // Statistics
+    Route::get('/statistics', [StatisticsController::class, 'index'])->name('admin.statistics.index');
+    
+    // Reports management
+    Route::get('/reports', [AdminReportController::class, 'index'])->name('admin.reports.index');
+    Route::get('/reports/{report}', [AdminReportController::class, 'show'])->name('admin.reports.show');
+    Route::post('/reports/{report}/update-status', [AdminReportController::class, 'updateStatus'])->name('admin.reports.update-status');
+    Route::post('/reports/{report}/ban-user', [AdminReportController::class, 'banUser'])->name('admin.reports.ban-user');
+    Route::post('/reports/{report}/send-notification', [AdminReportController::class, 'sendNotification'])->name('admin.reports.send-notification');
 });
 

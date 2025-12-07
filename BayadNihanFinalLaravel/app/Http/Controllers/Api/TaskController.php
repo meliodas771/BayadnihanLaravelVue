@@ -234,21 +234,43 @@ class TaskController extends Controller
 			return response()->json(['error' => 'You cannot apply to your own task'], 400);
 		}
 
-		$existingApp = Application::where('task_id', $id)->where('doer_id', $userId)->first();
-		if ($existingApp) {
+	$existingApp = Application::where('task_id', $id)->where('doer_id', $userId)->first();
+	
+	if ($existingApp) {
+		// If application is pending or accepted, don't allow reapplication
+		if (in_array($existingApp->status, ['pending', 'accepted'])) {
 			return response()->json(['error' => 'You have already applied to this task'], 400);
 		}
-
-		$hasAcceptedTask = Application::where('doer_id', $userId)
-			->where('status', 'accepted')
-			->whereHas('task', function($query) {
-				$query->whereIn('status', ['assigned', 'in_progress']);
-			})
-			->exists();
-
-		if ($hasAcceptedTask) {
-			return response()->json(['error' => 'You have an assigned task. You cannot apply for another task until you complete your current task.'], 400);
+		
+		// If application was rejected, check if they've completed any tasks since
+		if ($existingApp->status === 'rejected') {
+			// Check if user has completed at least one task
+			$hasCompletedTask = Application::where('doer_id', $userId)
+				->where('status', 'accepted')
+				->whereHas('task', function($query) {
+					$query->where('status', 'completed');
+				})
+				->exists();
+			
+			if (!$hasCompletedTask) {
+				return response()->json(['error' => 'You were previously rejected from this task. Complete the task to reapply.'], 400);
+			}
+			
+			// User has completed a task, allow reapplication by deleting old rejected application
+			$existingApp->delete();
 		}
+	}
+
+	$hasAcceptedTask = Application::where('doer_id', $userId)
+		->where('status', 'accepted')
+		->whereHas('task', function($query) {
+			$query->whereIn('status', ['assigned', 'in_progress']);
+		})
+		->exists();
+
+	if ($hasAcceptedTask) {
+		return response()->json(['error' => 'You have an assigned task. You cannot apply for another task until you complete your current task.'], 400);
+	}
 
 		$application = Application::create([
 			'task_id' => $task->id,

@@ -27,7 +27,7 @@ class MessageSent implements ShouldBroadcastNow
 			'sender_name' => optional($message->sender)->username,
 			'content' => $message->content,
 			'image_url' => $message->image_url,
-			'sent_at' => optional($message->sent_at)->toDateTimeString(),
+			'sent_at' => optional($message->sent_at)->toAtomString(),
 		];
 	}
 

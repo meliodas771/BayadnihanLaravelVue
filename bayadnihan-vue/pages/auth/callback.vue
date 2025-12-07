@@ -47,8 +47,12 @@ onMounted(async () => {
     
     if (userResponse.user) {
       login(userResponse.user, token);
-      // Redirect to tasks page
-      router.push('/tasks');
+      // Wait a bit for state to update, then do a full page reload to ensure sidebar appears
+      await new Promise(resolve => setTimeout(resolve, 100));
+      // Use window.location for full page reload to ensure all state is fresh
+      if (process.client) {
+        window.location.href = '/tasks';
+      }
     } else {
       error.value = 'Failed to fetch user data. Please try logging in again.';
       isLoading.value = false;

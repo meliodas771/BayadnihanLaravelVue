@@ -256,9 +256,10 @@ const handleFormSubmission = async () => {
       
       if (process.client) {
         sessionStorage.removeItem('google_user');
+        // Wait a bit for state to update, then do a full page reload to ensure sidebar appears
+        await new Promise(resolve => setTimeout(resolve, 100));
+        window.location.href = '/tasks';
       }
-      
-      router.push('/tasks');
     } else {
       serverMessages.value = {
         error: response.message || 'Error completing registration',

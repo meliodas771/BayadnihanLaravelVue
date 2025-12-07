@@ -26,8 +26,12 @@ class FeedbackController extends Controller
 			return response()->json(['error' => 'Task must be completed before giving feedback'], 400);
 		}
 
-		if (Feedback::where('task_id', $taskId)->exists()) {
-			return response()->json(['error' => 'Feedback already submitted for this task'], 400);
+		// Check if THIS USER already submitted feedback (not just any feedback)
+		if ($task->doer_id && Feedback::where('task_id', $taskId)
+			->where('from_user_id', $userId)
+			->where('to_user_id', $task->doer_id)
+			->exists()) {
+			return response()->json(['error' => 'You have already submitted feedback for this task'], 400);
 		}
 
 		return response()->json(['task' => $task]);
@@ -50,12 +54,16 @@ class FeedbackController extends Controller
 			return response()->json(['error' => 'Task must be completed before giving feedback'], 400);
 		}
 
-		if (Feedback::where('task_id', $taskId)->exists()) {
-			return response()->json(['error' => 'Feedback already submitted for this task'], 400);
-		}
-
 		if (!$task->doer_id) {
 			return response()->json(['error' => 'No doer assigned to this task'], 400);
+		}
+
+		// Check if THIS USER already submitted feedback (not just any feedback)
+		if (Feedback::where('task_id', $taskId)
+			->where('from_user_id', $userId)
+			->where('to_user_id', $task->doer_id)
+			->exists()) {
+			return response()->json(['error' => 'You have already submitted feedback for this task'], 400);
 		}
 
 		$data = $request->validate([

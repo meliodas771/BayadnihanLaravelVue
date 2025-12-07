@@ -334,7 +334,11 @@ const handleSubmit = async (e) => {
     
     if (response.success && response.user && response.token) {
       login(response.user, response.token);
-      router.push('/tasks');
+      // Wait a bit for state to update, then do a full page reload to ensure sidebar appears
+      if (process.client) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        window.location.href = '/tasks';
+      }
     } else {
       serverErrors.value = {
         any: [response.error || 'Login failed'],

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -178,6 +179,8 @@ class UserController extends Controller
 		
 		if ($request->hasFile('profile_pic')) {
 			$filename = 'user_' . $user->id . '.' . $request->file('profile_pic')->extension();
+			
+			// Save to storage/app/public/profile_pics (Laravel storage system)
 			$request->file('profile_pic')->storeAs('profile_pics', $filename, 'public');
 			$user->profile_pic = $filename;
 		}
@@ -419,6 +422,30 @@ class UserController extends Controller
 			'totalFeedbacks' => $totalFeedbacks,
 			'isAcceptedDoer' => $isAcceptedDoer,
 			'isDoerForCurrentUser' => $isDoerForCurrentUser,
+		]);
+	}
+
+	public function getProfilePicture($filename)
+	{
+		// Sanitize filename to prevent directory traversal
+		$filename = basename($filename);
+		
+		$path = storage_path('app/public/profile_pics/' . $filename);
+		
+		if (!file_exists($path)) {
+			\Log::warning('Profile picture not found: ' . $path);
+			abort(404, 'Profile picture not found');
+		}
+		
+		// Get MIME type
+		$mimeType = mime_content_type($path);
+		if (!$mimeType) {
+			$mimeType = 'image/jpeg'; // default
+		}
+		
+		return response()->file($path, [
+			'Content-Type' => $mimeType,
+			'Cache-Control' => 'public, max-age=3600',
 		]);
 	}
 }

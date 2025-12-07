@@ -8,6 +8,7 @@ use App\Models\Message;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use App\Events\MessageSent;
+use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
@@ -94,8 +95,9 @@ class MessageController extends Controller
 		if ($request->hasFile('image')) {
 			$image = $request->file('image');
 			$imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-			$image->move(public_path('storage/chat_images'), $imageName);
-			$imageUrl = 'storage/chat_images/' . $imageName;
+			// Use Storage facade to store in storage/app/public/chat_images
+			$path = $image->storeAs('chat_images', $imageName, 'public');
+			$imageUrl = 'storage/' . $path;
 		}
 
 		// Use UTC time explicitly to ensure consistency

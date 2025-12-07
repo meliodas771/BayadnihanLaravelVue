@@ -1,6 +1,9 @@
 <template>
   <div>
     <div class="container" :style="containerStyle">
+        <!-- Success Message -->
+        <div v-if="success" class="alert success" :style="successStyle">{{ success }}</div>
+        
         <!-- Skeleton Loading -->
         <div v-if="isLoading" class="card" :style="cardStyle">
           <div :style="skeletonTitleStyle"></div>
@@ -144,9 +147,13 @@
             </template>
             <!-- Apply button or application status -->
             <template v-if="!task.is_draft && task.status === 'open' && !isPoster && isDoer">
+              <!-- Apply Success Message (subtle) -->
+              <div v-if="applySuccess" :style="applySuccessStyle">
+                ✓ {{ applySuccess }}
+              </div>
               <button 
                 v-if="!hasApplied"
-                @click="handleApply"
+                @click="showApplyModal"
                 class="btn"
                 :style="buttonStyle"
               >
@@ -357,8 +364,9 @@
           <textarea 
             id="chatInput" 
             v-model="chatMessage"
-            placeholder="Type your message..."
+            placeholder="Type your message... "
             :style="chatInputStyle"
+            @keydown.enter="handleEnterKey"
           ></textarea>
           <button type="submit" :style="sendButtonStyle">Send</button>
         </form>
@@ -400,6 +408,25 @@
       </div>
     </div>
     
+    <!-- Apply to Task Confirmation Modal -->
+    <div v-if="showApplyModalVisible" :style="modalOverlayStyle" @click="closeApplyModal">
+      <div :style="modalContentStyle" @click.stop>
+        <div :style="modalHeaderStyle">
+          <h3 :style="modalHeaderH3Style">Apply for Task</h3>
+          <button @click="closeApplyModal" :style="modalCloseButtonStyle">&times;</button>
+        </div>
+        <div :style="modalBodyStyle">
+          <p :style="modalBodyPStyle">Are you sure you want to apply for this task? The poster will be notified of your application.</p>
+        </div>
+        <div :style="modalFooterStyle">
+          <button @click="closeApplyModal" class="btn btn-secondary" :style="modalCancelButtonStyle">Cancel</button>
+          <button @click="confirmApply" class="btn btn-success" :style="modalConfirmButtonStyle">
+            Yes, Apply
+          </button>
+        </div>
+      </div>
+    </div>
+    
     <!-- Accept Application Confirmation Modal -->
     <div v-if="showAcceptModalVisible" :style="modalOverlayStyle" @click="closeAcceptModal">
       <div :style="modalContentStyle" @click.stop>
@@ -430,12 +457,15 @@ import { useRuntimeConfig } from '#app';
 
 const route = useRoute();
 const router = useRouter();
-const { user } = useUser();
+const { user, isAuthenticated, isLoading: userLoading } = useUser();
 const { tasksAPI, messagesAPI, feedbackAPI } = useAPI();
+const { $echo } = useNuxtApp();
 
 const taskId = route.params.id;
 const task = ref(null);
 const isLoading = ref(true);
+const success = ref('');
+const applySuccess = ref('');
 const applyError = ref('');
 const unreadMessageCount = ref(0);
 const showChatWindow = ref(false);
@@ -451,6 +481,7 @@ const applications = ref([]);
 const isAccepting = ref(false);
 const showCancelModalVisible = ref(false);
 const showAcceptModalVisible = ref(false);
+const showApplyModalVisible = ref(false);
 const pendingApplicationId = ref(null);
 const existingPosterFeedback = ref(null);
 const existingDoerFeedback = ref(null);
@@ -466,7 +497,12 @@ const isSubmittingFeedback = ref(false);
 
 const isPoster = computed(() => task.value && user.value && task.value.poster_id === user.value.id);
 const isDoer = computed(() => user.value && user.value.role !== 'poster');
-const hasApplied = computed(() => task.value && task.value.userApplication);
+const hasApplied = computed(() => {
+  // Only consider pending or accepted applications as "has applied"
+  // Rejected applications allow reapplication if user has completed tasks
+  return task.value && task.value.userApplication && 
+    ['pending', 'accepted'].includes(task.value.userApplication.status);
+});
 const isAcceptedDoer = computed(() => task.value && task.value.userApplication && 
   ['accepted', 'completed'].includes(task.value.userApplication.status));
 const editTaskUrl = computed(() => {
@@ -595,6 +631,16 @@ const fetchMessages = async () => {
   } finally {
     isLoadingMessages.value = false;
   }
+};
+
+const handleEnterKey = (event) => {
+  // If Shift+Enter, allow new line (default behavior)
+  if (event.shiftKey) {
+    return;
+  }
+  // Otherwise, prevent new line and send message
+  event.preventDefault();
+  sendMessage();
 };
 
 const sendMessage = async () => {
@@ -875,9 +921,13 @@ const getStarStyle = (index, rating, isDisplay = false) => {
   };
 };
 
-onMounted(async () => {
+// Function to load/reload task data
+const loadTaskData = async (showSkeleton = true) => {
   try {
-    isLoading.value = true;
+    // Only show skeleton on initial load, not on refresh
+    if (showSkeleton) {
+      isLoading.value = true;
+    }
     const response = await tasksAPI.getById(taskId);
     task.value = response.task || response;
     
@@ -914,7 +964,76 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error fetching task:', error);
   } finally {
-    isLoading.value = false;
+    if (showSkeleton) {
+      isLoading.value = false;
+    }
+  }
+};
+
+onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
+  // Load task data
+  await loadTaskData();
+  
+  // Set up real-time message listener
+  if (taskId && $echo && user.value) {
+    try {
+      const channel = $echo.private(`task.${taskId}`);
+      
+      channel.error((error) => {
+        console.error('Channel authorization error:', error);
+      });
+      
+      channel.listen('.MessageSent', (data) => {
+        // Add the new message to the messages array
+        if (data && data.id) {
+          // Check if message already exists to prevent duplicates
+          const exists = messages.value.some(m => m.id === data.id);
+          if (!exists) {
+            messages.value.push({
+              id: data.id,
+              sender_id: data.sender_id,
+              receiver_id: data.receiver_id,
+              sender_name: data.sender_name,
+              content: data.content,
+              image_url: data.image_url,
+              sent_at: data.sent_at
+            });
+            
+            // Update unread count if the message is not from current user and chat is closed
+            if (user.value && data.sender_id !== user.value.id && !showChatWindow.value) {
+              unreadMessageCount.value++;
+            }
+            
+            // Scroll to bottom if chat is open
+            if (showChatWindow.value) {
+              nextTick(() => {
+                scrollChatToBottom();
+              });
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up message listener:', error);
+    }
   }
   
   // Add window resize listener
@@ -927,6 +1046,15 @@ onMounted(async () => {
 onUnmounted(() => {
   if (process.client) {
     window.removeEventListener('resize', handleResize);
+  }
+  
+  // Clean up Echo listener
+  if (taskId && $echo) {
+    try {
+      $echo.leave(`task.${taskId}`);
+    } catch (error) {
+      console.error('Error cleaning up message listener:', error);
+    }
   }
 });
 
@@ -963,11 +1091,11 @@ const confirmAcceptApplication = async () => {
     isAccepting.value = true;
     await tasksAPI.acceptApplication(taskId, pendingApplicationId.value);
     closeAcceptModal();
-    // Reload page to show updated applications
-    router.go(0);
+    // Reload task data to show updated applications (no skeleton, no page reload)
+    await loadTaskData(false);
   } catch (error) {
     console.error('Error accepting application:', error);
-    alert(error.message || 'Failed to accept application');
+    alert('❌ ' + (error.message || 'Failed to accept application'));
   } finally {
     isAccepting.value = false;
   }
@@ -1020,11 +1148,27 @@ const getApplicationStatusBadgeStyle = (status) => {
   }
 };
 
-const handleApply = async () => {
+const showApplyModal = () => {
+  showApplyModalVisible.value = true;
+};
+
+const closeApplyModal = () => {
+  showApplyModalVisible.value = false;
+};
+
+const confirmApply = async () => {
   applyError.value = '';
+  closeApplyModal();
   try {
     await tasksAPI.apply(taskId);
-    router.go(0); // Reload page
+    // Show subtle success message above apply button
+    applySuccess.value = 'Application submitted successfully!.';
+    // Reload task data to show updated application status (no skeleton, no page reload)
+    await loadTaskData(false);
+    // Auto-clear message after 5 seconds
+    setTimeout(() => {
+      applySuccess.value = '';
+    }, 5000);
   } catch (error) {
     applyError.value = error.message || 'Unknown error occurred';
   }
@@ -1067,10 +1211,21 @@ const handleCancelTask = async () => {
   try {
     await tasksAPI.cancel(taskId);
     closeCancelModal();
-    router.go(0); // Reload page to show updated status
+    // Show success message
+    success.value = 'Task cancelled successfully! All pending applications have been rejected.';
+    // Reload task data to show updated status (no skeleton, no page reload)
+    await loadTaskData(false);
+    // Auto-clear message after 5 seconds
+    setTimeout(() => {
+      success.value = '';
+    }, 5000);
+    // Scroll to top to show the message
+    if (process.client) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   } catch (error) {
     console.error('Error cancelling task:', error);
-    alert(error.message || 'Failed to cancel task');
+    alert('❌ ' + (error.message || 'Failed to cancel task'));
   }
 };
 
@@ -1183,6 +1338,31 @@ const containerStyle = {
   maxWidth: '900px',
   margin: '24px auto',
   padding: '0 16px'
+};
+
+const successStyle = {
+  background: 'linear-gradient(135deg, #1cc88a 0%, #17a673 100%)',
+  color: 'white',
+  padding: '16px 24px',
+  borderRadius: '12px',
+  marginBottom: '24px',
+  boxShadow: '0 4px 12px rgba(28, 200, 138, 0.2)',
+  fontSize: '15px',
+  fontWeight: '500',
+  border: 'none'
+};
+
+const applySuccessStyle = {
+  background: 'rgba(28, 200, 138, 0.1)',
+  color: '#1cc88a',
+  padding: '10px 16px',
+  borderRadius: '8px',
+  marginBottom: '12px',
+  fontSize: '14px',
+  fontWeight: '500',
+  border: '1px solid rgba(28, 200, 138, 0.3)',
+  display: 'block',
+  textAlign: 'center'
 };
 
 const cardStyle = {

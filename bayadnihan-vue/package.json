@@ -10,10 +10,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "nuxt": "^4.2.1",
-    "vue": "^3.5.25",
-    "vue-router": "^4.6.3",
     "@pinia/nuxt": "^0.5.1",
-    "pinia": "^2.1.7"
+    "laravel-echo": "^2.2.6",
+    "nuxt": "^4.2.1",
+    "pinia": "^2.1.7",
+    "pusher-js": "^8.4.0",
+    "vue": "^3.5.25",
+    "vue-router": "^4.6.3"
   }
 }

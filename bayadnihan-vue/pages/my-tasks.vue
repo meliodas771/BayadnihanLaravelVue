@@ -37,15 +37,37 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAPI } from '~/utils/api';
+import { useUser } from '~/composables/useUser';
 
+const router = useRouter();
 const { userAPI } = useAPI();
+const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const postedTasks = ref([]);
 const assignedTasks = ref([]);
 const loading = ref(true);
 
 onMounted(async () => {
+  // Check authentication first
+  if (process.client) {
+    const checkAuth = () => {
+      if (!userLoading.value) {
+        if (!isAuthenticated.value) {
+          router.push('/login');
+          return false;
+        }
+        return true;
+      } else {
+        setTimeout(checkAuth, 100);
+        return false;
+      }
+    };
+    
+    if (!checkAuth()) return;
+  }
+  
   try {
     const response = await userAPI.getMyTasks();
     const data = response.tasks || response;

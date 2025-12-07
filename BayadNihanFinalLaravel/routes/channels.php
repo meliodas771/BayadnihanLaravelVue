@@ -35,3 +35,9 @@ Broadcast::channel('task.{taskId}', function ($user, $taskId) {
     return $isAcceptedDoer;
 });
 
+// Admin reports channel (public channel for admins)
+Broadcast::channel('admin-reports', function ($user) {
+    // Only allow admins
+    return $user && $user->role === 'admin';
+});
+
