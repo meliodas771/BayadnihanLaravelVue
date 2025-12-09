@@ -126,7 +126,7 @@ class UserController extends Controller
 		$hasPostedTasks = $postedTasksList->count() > 0;
 		$hasDoneTasks = $doneTasksList->count() > 0;
 		
-	// Get feedbacks received as doer (from posters) - match Blade controller exactly
+	// Get feedbacks received as doer (from posters) 
 	// Feedback structure: from_user_id = poster, to_user_id = doer (task->doer_id)
 	$feedbacks = DB::table('feedbacks as f')
 		->join('users as u', 'f.from_user_id', '=', 'u.id')
@@ -198,11 +198,7 @@ class UserController extends Controller
 
 		// Validate username + email for verification
 		$data = $request->validate([
-			'username' => [
-				'required',
-				'regex:/^\d{3}-\d{5}$/',
-				'unique:users,username,' . $user->id
-			],
+			'username' => ['required','regex:/^\d{3}-\d{5}$/','unique:users,username,' . $user->id],
 			'email' => ['required', 'email'], // Just needed for API verification
 		], [
 			'username.regex' => 'ID Number must be in the format 000-00000 (e.g., 231-00123).',

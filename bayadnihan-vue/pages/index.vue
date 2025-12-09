@@ -105,8 +105,8 @@
         </div>
         
         <div :style="featuresGridStyle">
-          <div v-for="(feature, index) in features" :key="index" :style="featureCardStyle">
-            <div :style="featureIconStyle">{{ feature.icon }}</div>
+          <div v-for="(feature, index) in features" :key="index" :style="featureCardStyle" class="feature-card">
+            <div :style="featureIconStyle" class="feature-icon">{{ feature.icon }}</div>
             <h3>{{ feature.title }}</h3>
             <p>{{ feature.description }}</p>
           </div>
@@ -123,8 +123,8 @@
         </div>
         
         <div :style="stepsStyle">
-          <div v-for="(step, index) in steps" :key="index" :style="stepStyle">
-            <div :style="stepIconStyle">{{ step.icon }}</div>
+          <div v-for="(step, index) in steps" :key="index" :style="stepStyle" class="step-card">
+            <div :style="stepIconStyle" class="step-icon">{{ step.icon }}</div>
             <div style="flex: 1">
               <h3 :style="{ marginBottom: '0.5rem', color: '#2e3a59' }">{{ step.title }}</h3>
               <p :style="{ color: '#858796', margin: 0 }">{{ step.description }}</p>
@@ -143,7 +143,7 @@
         </div>
         
             <div :style="testimonialsGridStyle">
-          <div v-for="(testimonial, index) in testimonials" :key="index" :style="testimonialCardStyle">
+          <div v-for="(testimonial, index) in testimonials" :key="index" :style="testimonialCardStyle" class="testimonial-card-animated">
             <div :style="testimonialContentStyle">
               <p :style="{ color: '#2e3a59', fontSize: '15px', lineHeight: '1.8', margin: 0, fontStyle: 'italic' }">"{{ testimonial.text }}"</p>
             </div>
@@ -470,3 +470,127 @@ const mobileNavStyle = computed(() => ({ ...navStyle, flexDirection: 'column', g
 const mobileNavLinkStyle = computed(() => ({ ...navLinkStyle, padding: '0.5rem 0', borderBottom: '1px solid #eee' }));
 const mobileHeaderActionsStyle = computed(() => ({ ...headerActionsStyle, flexDirection: 'column', gap: '0.5rem' }));
 </script>
+
+<style scoped>
+/* Feature Cards Hover Animation */
+.feature-card {
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(78, 115, 223, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 15px 40px rgba(78, 115, 223, 0.3);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+}
+
+.feature-card:hover::before {
+  left: 100%;
+}
+
+/* Step Cards Hover Animation */
+.step-card {
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+.step-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 0;
+  background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+  transition: height 0.4s ease;
+  border-radius: 10px 0 0 10px;
+}
+
+.step-card:hover {
+  transform: translateX(10px) scale(1.03);
+  box-shadow: 0 15px 40px rgba(78, 115, 223, 0.25);
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fc 100%);
+}
+
+.step-card:hover::after {
+  height: 100%;
+}
+
+/* Testimonial Cards Hover Animation */
+.testimonial-card-animated {
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.testimonial-card-animated::before {
+  content: '💬';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 3rem;
+  opacity: 0;
+  transform: rotate(-15deg) scale(0.5);
+  transition: all 0.4s ease;
+}
+
+.testimonial-card-animated:hover {
+  transform: translateY(-10px) rotate(-1deg);
+  box-shadow: 0 20px 45px rgba(78, 115, 223, 0.3);
+  background: linear-gradient(135deg, #f8f9fc 0%, #e8eaf6 100%);
+}
+
+.testimonial-card-animated:hover::before {
+  opacity: 0.1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* Icon Animations on Hover */
+.feature-card:hover .feature-icon,
+.step-card:hover .step-icon {
+  animation: bounce-icon 0.6s ease;
+}
+
+@keyframes bounce-icon {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.2) rotate(-5deg);
+  }
+  50% {
+    transform: scale(0.95) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-3deg);
+  }
+}
+
+/* Smooth transitions for all interactive elements */
+.feature-card h3,
+.step-card h3,
+.testimonial-card-animated h4 {
+  transition: color 0.3s ease;
+}
+
+.feature-card:hover h3,
+.step-card:hover h3,
+.testimonial-card-animated:hover h4 {
+  color: #4e73df;
+}
+</style>

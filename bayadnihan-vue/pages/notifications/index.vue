@@ -144,9 +144,11 @@ const handleResize = () => {
   }
 };
 
-const fetchNotifications = async () => {
+const fetchNotifications = async (showLoading = true) => {
   try {
-    isLoading.value = true;
+    if (showLoading) {
+      isLoading.value = true;
+    }
     const response = await notificationsAPI.getAll();
     const notificationsData = response.notifications || response || [];
     notifications.value = Array.isArray(notificationsData) ? notificationsData : [];
@@ -154,7 +156,9 @@ const fetchNotifications = async () => {
     console.error('Error fetching notifications:', error);
     notifications.value = [];
   } finally {
-    isLoading.value = false;
+    if (showLoading) {
+      isLoading.value = false;
+    }
   }
 };
 
@@ -199,7 +203,7 @@ const handleNotificationClick = async (notification) => {
 const markAsRead = async (id) => {
   try {
     await notificationsAPI.markRead(id);
-    await fetchNotifications();
+    await fetchNotifications(false); // No skeleton loading
     openMenuId.value = null;
     // Emit event to update sidebar badge
     if (process.client) {
@@ -213,7 +217,7 @@ const markAsRead = async (id) => {
 const markAllRead = async () => {
   try {
     await notificationsAPI.markAllRead();
-    await fetchNotifications();
+    await fetchNotifications(false); // No skeleton loading
     // Emit event to update sidebar badge
     if (process.client) {
       window.dispatchEvent(new CustomEvent('notification-read'));
@@ -233,7 +237,7 @@ const confirmDelete = async () => {
   if (!notificationToDelete.value) return;
   try {
     await notificationsAPI.delete(notificationToDelete.value.id);
-    await fetchNotifications();
+    await fetchNotifications(false); // No skeleton loading
     showDeleteModal.value = false;
     notificationToDelete.value = null;
   } catch (error) {
@@ -244,7 +248,7 @@ const confirmDelete = async () => {
 const confirmDeleteAll = async () => {
   try {
     await notificationsAPI.deleteAll();
-    await fetchNotifications();
+    await fetchNotifications(false); // No skeleton loading
     showDeleteAllModal.value = false;
   } catch (error) {
     console.error('Error deleting all notifications:', error);

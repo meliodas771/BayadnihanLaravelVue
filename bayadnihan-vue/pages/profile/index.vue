@@ -1328,10 +1328,9 @@ useHead({
   ]
 });
 
-// All style objects would go here - I'll include key ones
+// All style objects would go here  include key ones
 // Use a ref to track window width for reactive updates
-// Initialize with consistent default for SSR to avoid hydration mismatch
-const windowWidth = ref(1920); // Default to desktop width for SSR consistency
+const windowWidth = ref(1920); // Default to desktop width
 const isMounted = ref(false);
 
 if (process.client) {

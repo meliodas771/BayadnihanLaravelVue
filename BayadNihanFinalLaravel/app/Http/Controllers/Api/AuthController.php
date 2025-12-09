@@ -86,8 +86,8 @@ class AuthController extends Controller
 	public function register(Request $request)
 	{
 		$data = $request->validate([
-			'username' => ['required','string','regex:/^\d{3}-\d{5}$/','unique:users,username'],
-			'email' => ['required','email','regex:/^[A-Za-z0-9._%+-]+@carsu\.edu\.ph$/i','unique:users,email'],
+			'username' => ['required','string','regex:/^\d{3}-\d{5}$/','unique:users,username'], //regular expressions for the username
+			'email' => ['required','email','regex:/^[A-Za-z0-9._%+-]+@carsu\.edu\.ph$/i','unique:users,email'], //regular expressions for the email
 			'password' => 'required|string|min:6',
 			'role' => 'nullable|string',
 			'phone_number' => 'nullable|string',
@@ -418,9 +418,9 @@ class AuthController extends Controller
 		}
 		
 		// Custom success message for trial users
-		$message = 'Thank you for verifying your email! Your account has been activated successfully. You are good to login now from the browser where you registered.';
+		$message = 'Thank you for verifying your email! Your account has been activated successfully. You are good to login now';
 		if ($user->subscription_status === 'trial' && $user->role === 'both') {
-			$message = 'Thank you for verifying your email! Your 7-day free trial has started. Enjoy full access to both Poster and Doer roles! You are good to login now from the browser where you registered.';
+			$message = 'Thank you for verifying your email! Your 7-day free trial has started. Enjoy full access to both Poster and Doer roles! You are good to login now';
 		}
 		
 		return response()->json([

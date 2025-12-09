@@ -1667,7 +1667,7 @@ const messageStyle = {
   marginBottom: '16px',
   padding: '12px',
   borderRadius: '8px',
-  maxWidth: '80%'
+  maxWidth: '60%'
 };
 
 const messageMeStyle = {

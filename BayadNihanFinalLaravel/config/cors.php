@@ -15,8 +15,8 @@ return [
         'http://127.0.0.1:3001',
         'http://localhost:5173', // Vite dev server
         'http://127.0.0.1:5173', // Vite dev server
-        'http://192.168.1.2:8000', // 👈 your laptop IP
-        'http://192.168.1.2:8080', // 👈 your Reverb port
+        'http://192.168.1.2:8000', //  laptop IP
+        'http://192.168.1.2:8080', //  Reverb port
     ],
 
     'allowed_origins_patterns' => [

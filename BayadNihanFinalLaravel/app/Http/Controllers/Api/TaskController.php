@@ -244,7 +244,7 @@ class TaskController extends Controller
 		
 		// If application was rejected, check if they've completed any tasks since
 		if ($existingApp->status === 'rejected') {
-			// Check if user has completed at least one task
+			// Check if user has completed a task since being rejected
 			$hasCompletedTask = Application::where('doer_id', $userId)
 				->where('status', 'accepted')
 				->whereHas('task', function($query) {
@@ -498,6 +498,8 @@ class TaskController extends Controller
 					}
 				}
 				
+				// delete all messages for the task
+				// since the task is completed, the user can longer see the open chats button
 				Message::where('task_id', $task->id)->delete();
 			}
 			

@@ -174,7 +174,7 @@
             @click="publishNow"
             :disabled="isLoading"
           >
-            🚀 Publish Now
+             Publish Now
           </button>
         </div>
       </div>

@@ -684,7 +684,7 @@ const getSubmitButtonStyle = () => {
   return baseStyle;
 };
 
-// Styles (abbreviated - full styles from React version)
+// Styles 
 const globalStyles = `
   * {
     margin: 0;

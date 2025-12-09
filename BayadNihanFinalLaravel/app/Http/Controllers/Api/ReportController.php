@@ -115,7 +115,7 @@ class ReportController extends Controller
         
         if ($existingReport) {
             return response()->json([
-                'error' => 'You have already reported this user today. You can only report the same user once per day.'
+                'error' => 'You have already submitted a report for this user today. You can only report the same user once per day.'
             ], 400);
         }
 

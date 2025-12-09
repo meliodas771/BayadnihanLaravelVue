@@ -292,7 +292,7 @@
         <!-- Header -->
         <div class="email-header">
             <a href="{{ $appUrl ?? env('APP_URL_EMAIL', 'http://localhost:3000') }}" class="logo">BayadNihan</a>
-            <div class="logo-tagline">Campus-Based Earning Platform</div>
+            <div class="logo-tagline">Earn While You Learn. Help While You Study.</div>
         </div>
         
         <!-- Body -->

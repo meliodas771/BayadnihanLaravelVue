@@ -26,7 +26,7 @@
             If you have any questions about this Privacy Policy or how we handle your data, please contact us at:
           </p>
           <p :style="contactInfoStyle">
-            <strong>Email:</strong> support@bayadnihan.com<br>
+            <strong>Email:</strong> bayadnihan@gmail.com<br>
             <strong>Phone:</strong> (+63) 912 345 6789
           </p>
         </div>
@@ -154,7 +154,7 @@ const sections = [
   {
     title: '10. Children\'s Privacy',
     content: [
-      'BayadNihan is designed for CARSU students, who are typically adults. We do not knowingly collect personal information from children under 18. If we become aware that we have collected information from a child under 13, we will take steps to delete such information promptly.'
+      'BayadNihan is designed for CARSU students, who are typically adults. We do not knowingly collect personal information from children under 18. If we become aware that we have collected information from a child under 18, we will take steps to delete such information promptly.'
     ]
   },
   {

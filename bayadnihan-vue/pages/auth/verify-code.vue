@@ -31,7 +31,7 @@
             type="text" 
             id="code" 
             name="code" 
-            placeholder="000000" 
+            placeholder="0 0 0 0 0 0" 
             v-model="code"
             @input="handleCodeChange"
             @paste="handlePaste"
