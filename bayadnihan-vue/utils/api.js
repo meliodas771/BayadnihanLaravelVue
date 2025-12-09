@@ -2,7 +2,7 @@
 
 export const useAPI = () => {
   const config = useRuntimeConfig();
-  const API_BASE_URL = config.public.apiBaseUrl || 'https://5dab011d317e22.lhr.life/api';
+  const API_BASE_URL = config.public.apiBaseUrl || 'https://8997d1c0667334.lhr.life/api';
 
   // Helper function to get auth token
   const getAuthToken = () => {
