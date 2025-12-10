@@ -2,7 +2,7 @@
 
 export const useAPI = () => {
   const config = useRuntimeConfig();
-  const API_BASE_URL = config.public.apiBaseUrl || 'https://tr6cktf1-8000.asse.devtunnels.ms/api';
+  const API_BASE_URL = config.public.apiBaseUrl || 'https://8de262d8757e8c.lhr.life/api';
 
   // Helper function to get auth token
   const getAuthToken = () => {
