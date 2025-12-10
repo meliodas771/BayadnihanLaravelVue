@@ -2,7 +2,7 @@
 
 export const useAPI = () => {
   const config = useRuntimeConfig();
-  const API_BASE_URL = config.public.apiBaseUrl || 'http://127.0.0.1:8000/api';
+  const API_BASE_URL = config.public.apiBaseUrl || 'http://192.168.1.17/api';
 
   // Helper function to get auth token
   const getAuthToken = () => {
