@@ -29,10 +29,10 @@ return [
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['Authorization'],
 
-    'max_age' => 0,
+    'max_age' => 3600, // Cache preflight for 1 hour
 
-    'supports_credentials' => false, // Set to false for API token authentication
+    'supports_credentials' => true, // Changed to true for proper token handling
 ];
 
