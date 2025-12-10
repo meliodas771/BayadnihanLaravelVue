@@ -17,9 +17,7 @@ return [
         'http://127.0.0.1:5173', // Vite dev server
         'http://192.168.1.2:8000', //  laptop IP
         'http://192.168.1.2:8080', //  Reverb port
-        'https://d7fdfc3450dc8c.lhr.life', //  Laravel server
         'https://bayadnihan-laravel-vue.vercel.app',
-        'https://8de262d8757e8c.lhr.life', //  New Laravel server
         // Add this to your allowed_origins array in config/cors.php
         
     ],
