@@ -19,6 +19,9 @@ return [
         'http://192.168.1.2:8080', //  Reverb port
         'https://d7fdfc3450dc8c.lhr.life', //  Laravel server
         'https://bayadnihan-laravel-vue.vercel.app',
+        // Add this to your allowed_origins array in config/cors.php
+        'https://tr6cktf1-8000.asse.devtunnels.ms',
+        
     ],
 
     'allowed_origins_patterns' => [
