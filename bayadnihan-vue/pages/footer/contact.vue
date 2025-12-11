@@ -121,9 +121,31 @@ const submitMessage = ref('');
 const handleSubmit = async () => {
   isSubmitting.value = true;
   submitMessage.value = '';
-  
-  // Simulate form submission (you can integrate with your backend API here)
-  setTimeout(() => {
+
+  try {
+    const config = useRuntimeConfig();
+    const apiBase = config.public.apiBaseUrl || '';
+
+    const response = await fetch(`${apiBase}/contact`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name: formData.value.name,
+        email: formData.value.email,
+        subject: formData.value.subject,
+        message: formData.value.message
+      })
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data?.message || data?.statusMessage || 'Failed to send message');
+    }
+
     submitMessage.value = 'Thank you for contacting us! We\'ll get back to you soon.';
     formData.value = {
       name: '',
@@ -131,12 +153,16 @@ const handleSubmit = async () => {
       subject: '',
       message: ''
     };
-    isSubmitting.value = false;
-    
+
     setTimeout(() => {
       submitMessage.value = '';
     }, 5000);
-  }, 1000);
+  } catch (error) {
+    console.error('Contact form error:', error);
+    submitMessage.value = 'Failed to send message. Please try again later.';
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 
 // Styles

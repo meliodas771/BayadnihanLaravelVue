@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\FeedbackController;
 use App\Http\Controllers\Api\GoogleAuthController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\TaskController as AdminTaskController;
@@ -84,6 +85,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 // Email Verification
 Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify');
 Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])->name('verification.send');
+
+// Contact form (public)
+Route::post('/contact', [ContactController::class, 'send']);
 
 // Google OAuth ,redirectToGoogle and handleGoogleCallback moved to web.php for session support
 // Only the complete-registration endpoint stays here as it's called from frontend

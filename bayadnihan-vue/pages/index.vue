@@ -391,7 +391,7 @@ const btnDangerStyle = { background: '#e74a3b', color: 'white' };
 const burgerMenuStyle = { display: 'flex', flexDirection: 'column', gap: '5px', cursor: 'pointer', padding: '10px', zIndex: 1001 };
 const burgerSpanStyle = { width: '25px', height: '3px', backgroundColor: '#2e3a59', transition: 'all 0.3s ease', borderRadius: '3px' };
 const menuOverlayStyle = computed(() => ({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', zIndex: 1000, opacity: isMobileMenuOpen.value ? 1 : 0, visibility: isMobileMenuOpen.value ? 'visible' : 'hidden', transition: 'opacity 0.3s ease, visibility 0.3s ease' }));
-const heroStyle = { padding: '8rem 0 5rem', background: 'linear-gradient(135deg, #f8f9fc 0%, #e8eaf6 100%)', marginTop: '80px' };
+const heroStyle = { padding: '8rem 0 5rem', background: 'linear-gradient(135deg, #f8f9fc 0%, #e8eaf6 100%)', marginTop: '10px' };
 const heroContentStyle = computed(() => ({ 
   display: 'flex', 
   alignItems: 'center', 
