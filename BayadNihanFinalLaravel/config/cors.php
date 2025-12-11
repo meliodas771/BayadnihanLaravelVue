@@ -18,6 +18,8 @@ return [
         'http://192.168.1.2:8000', //  laptop IP
         'http://192.168.1.2:8080', //  Reverb port
         'https://bayadnihan-laravel-vue.vercel.app',
+        // Ngrok URLs (all subdomains)
+        'https://*.ngrok.io',
         // Add this to your allowed_origins array in config/cors.php
         
     ],

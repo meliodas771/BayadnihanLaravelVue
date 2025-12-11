@@ -158,6 +158,11 @@ return [
 
     'domain' => env('SESSION_DOMAIN'),
 
+
+    'domain' => '.ngrok.io', 
+    'secure' => true,        
+    'same_site' => 'lax',
+
     /*
     |--------------------------------------------------------------------------
     | HTTPS Only Cookies
