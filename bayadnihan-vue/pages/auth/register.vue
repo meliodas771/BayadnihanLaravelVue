@@ -348,6 +348,9 @@ const formData = ref({
   role: 'both',
   phone_number: ''
 });
+const PASSWORD_PATTERN = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
+const MIN_PASSWORD_LENGTH = 6;
+
 const validation = ref({
   username: { isValid: false, message: '', visible: false },
   email: { isValid: false, message: '', visible: false },
@@ -357,7 +360,7 @@ const validation = ref({
 const passwordStrength = ref({
   strength: 0,
   class: '',
-  requirement: 'Minimum 6 characters required (0/6)',
+  requirement: 'At least 6 characters with 1 uppercase, 1 number, and 1 special character',
   requirementClass: ''
 });
 const showTrialModal = ref(false);
@@ -383,19 +386,30 @@ const calculatePasswordStrength = (password) => {
     else strengthClass = 'strong';
   }
 
-  const charCount = password.length;
-  const minRequired = 6;
+  const hasLength = password.length >= MIN_PASSWORD_LENGTH;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+
+  const unmet = [];
+  if (!hasLength) {
+    unmet.push(`at least ${MIN_PASSWORD_LENGTH} characters (${password.length}/${MIN_PASSWORD_LENGTH})`);
+  }
+  if (!hasUpper) unmet.push('one uppercase letter');
+  if (!hasNumber) unmet.push('one number');
+  if (!hasSpecial) unmet.push('one special character');
+
   let requirement = '';
   let requirementClass = '';
 
-  if (charCount === 0) {
-    requirement = `Minimum ${minRequired} characters required (0/${minRequired})`;
-  } else if (charCount < minRequired) {
-    requirement = `Minimum ${minRequired} characters required (${charCount}/${minRequired})`;
-    requirementClass = 'invalid';
-  } else {
-    requirement = `Password length: ${charCount} characters`;
+  if (password.length === 0) {
+    requirement = 'At least 6 characters with 1 uppercase, 1 number, and 1 special character';
+  } else if (unmet.length === 0) {
+    requirement = 'A Strong Password';
     requirementClass = 'valid';
+  } else {
+    requirement = `Needs ${unmet.join(', ')}`;
+    requirementClass = 'invalid';
   }
 
   return { strength, class: strengthClass, requirement, requirementClass };
@@ -426,10 +440,16 @@ const validateEmail = (email) => {
 };
 
 const validatePassword = (password) => {
-  const isValid = password.length >= 6;
+  if (password.length === 0) {
+    return { isValid: false, message: '' };
+  }
+
+  const isValid = PASSWORD_PATTERN.test(password);
   return {
     isValid,
-    message: isValid ? 'Password meets requirements' : 'Password must be at least 6 characters'
+    message: isValid 
+      ? 'Password meets requirements' 
+      : 'Must be 6+ chars with 1 uppercase, 1 number, and 1 special character'
   };
 };
 

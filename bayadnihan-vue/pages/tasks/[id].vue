@@ -1497,7 +1497,7 @@ const posterInfoBoxStyle = {
   color: '#004085',
   padding: '16px',
   borderRadius: '8px',
-  marginBottom: '20px',
+  marginTop: '30px',
   borderLeft: '4px solid #4e73df'
 };
 

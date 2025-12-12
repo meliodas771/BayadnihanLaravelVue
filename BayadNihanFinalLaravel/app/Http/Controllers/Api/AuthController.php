@@ -88,12 +88,13 @@ class AuthController extends Controller
 		$data = $request->validate([
 			'username' => ['required','string','regex:/^\d{3}-\d{5}$/','unique:users,username'], //regular expressions for the username
 			'email' => ['required','email','regex:/^[A-Za-z0-9._%+-]+@carsu\.edu\.ph$/i','unique:users,email'], //regular expressions for the email
-			'password' => 'required|string|min:6',
+			'password' => ['required','string','min:6','regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/'],
 			'role' => 'nullable|string',
 			'phone_number' => 'nullable|string',
 		], [
 			'username.regex' => 'ID Number must be in the format 000-00000 (e.g., 231-00123).',
 			'email.regex' => 'Email must be a valid @carsu.edu.ph',
+			'password.regex' => 'Password must be at least 6 characters with 1 uppercase letter, 1 number, and 1 special character.',
 		]);
 
 		//Verify that the student ID and email exist in the school system via API

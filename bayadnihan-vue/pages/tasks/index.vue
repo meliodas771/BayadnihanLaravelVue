@@ -379,7 +379,8 @@ const cardStyle = {
   borderRadius: '12px',
   boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   transition: 'transform 0.2s, box-shadow 0.2s',
-  border: 'none'
+  border: 'none',
+  borderLeft: '4px solid limegreen',
 };
 
 const cardTitleStyle = {
