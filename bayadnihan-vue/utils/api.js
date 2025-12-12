@@ -66,10 +66,6 @@ export const useAPI = () => {
     }
 
     try {
-      // Debug logging for login requests
-      if (endpoint === '/login' && method === 'POST') {
-        console.log('Login request:', { endpoint: `${API_BASE_URL}${endpoint}`, body: config.body, headers: config.headers });
-      }
       
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
       const data = await response.json();
