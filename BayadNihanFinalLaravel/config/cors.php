@@ -20,7 +20,7 @@ return [
         'https://bayadnihan-laravel-vue.vercel.app',
         // Ngrok URLs (all subdomains)
         'https://*.ngrok.io',
-        // Add this to your allowed_origins array in config/cors.php
+
         
     ],
 

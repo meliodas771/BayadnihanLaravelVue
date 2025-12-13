@@ -26,8 +26,19 @@
             </div>
           </div>
         </div>
-        
-        <div v-if="!loading && postedTasks.length === 0 && assignedTasks.length === 0" :style="emptyStateStyle">
+
+        <div v-if="cancelledTasks.length > 0" :style="sectionStyle">
+          <h2 :style="sectionTitleStyleCancelled">Cancelled Tasks</h2>
+          <div :style="gridStyle">
+            <div v-for="task in cancelledTasks" :key="task.id" :style="cardStyle">
+              <h3 :style="cardTitleStyle">{{ task.title }}</h3>
+              <p :style="cardMetaStyle">Status: {{ task.status }}</p>
+              <NuxtLink :to="`/tasks/${task.id}`" :style="btnStyleCancelled">View Task</NuxtLink>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="!loading && postedTasks.length === 0 && assignedTasks.length === 0 && cancelledTasks.length === 0" :style="emptyStateStyle">
           <div :style="emptyStateIconStyle">📋</div>
           <p>No tasks found</p>
         </div>
@@ -47,6 +58,7 @@ const { isAuthenticated, isLoading: userLoading } = useUser();
 
 const postedTasks = ref([]);
 const assignedTasks = ref([]);
+const cancelledTasks = ref([]);
 const loading = ref(true);
 
 onMounted(async () => {
@@ -76,6 +88,9 @@ onMounted(async () => {
     }
     if (data.assigned_tasks) {
       assignedTasks.value = data.assigned_tasks;
+    }
+    if (data.cancelled_tasks) {
+      cancelledTasks.value = data.cancelled_tasks;
     }
   } catch (error) {
     console.error('Error fetching my tasks:', error);
@@ -131,5 +146,7 @@ const cardMetaStyle = { color: '#858796', fontSize: '14px', marginBottom: '16px'
 const btnStyle = { display: 'inline-block', background: 'linear-gradient(135deg, #4e73df 0%, #224abe 100%)', color: '#fff', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: '600' };
 const emptyStateStyle = { textAlign: 'center', padding: '60px 20px', color: '#858796', background: '#fff', borderRadius: '12px' };
 const emptyStateIconStyle = { fontSize: '64px', marginBottom: '16px' };
+const btnStyleCancelled = { display: 'inline-block', background: '#dc3545', color: '#fff', padding: '10px 20px', borderRadius: '8px', textDecoration: 'none', fontSize: '14px', fontWeight: '600' };
+const sectionTitleStyleCancelled = { color: '#dc3545', fontSize: '24px', marginBottom: '20px' };
 </script>
 

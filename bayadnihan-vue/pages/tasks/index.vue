@@ -12,12 +12,12 @@
           :style="selectStyle"
         >
           <option value="all">All Categories</option>
+          <option value="general">General</option>
           <option value="grocery">Grocery</option>
           <option value="laundry">Laundry</option>
           <option value="powerpoint">Powerpoint</option>
           <option value="tutoring">Tutoring</option>
           <option value="academics">Academics</option>
-          <option value="other">Other</option>
         </select>
         <span id="taskCount" :style="{ color: '#858796', fontSize: '14px', marginLeft: 'auto' }">
           Showing {{ visibleCount }} task{{ visibleCount !== 1 ? 's' : '' }}
@@ -380,7 +380,7 @@ const cardStyle = {
   boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   transition: 'transform 0.2s, box-shadow 0.2s',
   border: 'none',
-  borderLeft: '4px solid limegreen',
+  borderLeft: '4px solid #4e73df',
 };
 
 const cardTitleStyle = {

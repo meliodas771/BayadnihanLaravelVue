@@ -216,8 +216,6 @@ export const useAPI = () => {
         formData.append('attachment', taskData.attachment);
       }
 
-      // Debug: Log FormData contents
-      console.log('FormData contents:');
       for (let pair of formData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       }
@@ -361,6 +359,15 @@ export const useAPI = () => {
         method: 'POST',
         body: { username, email },
       });
+    },
+
+    getChatbotData: async () => {
+      const response = await apiRequest('/chatbot/questions', {
+        includeAuth: false,
+      });
+      return {
+        chatbots: response.data || [],
+      };
     },
   };
 

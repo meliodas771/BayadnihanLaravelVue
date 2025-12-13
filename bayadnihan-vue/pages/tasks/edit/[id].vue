@@ -85,11 +85,11 @@
               :style="inputStyle"
             >
               <option value="">Select Category</option>
+              <option value="general">📌 General</option>
               <option value="grocery">🛒 Grocery</option>
               <option value="laundry">👕 Laundry</option>
               <option value="tutoring">📚 Tutoring</option>
               <option value="powerpoint">💻 PowerPoint</option>
-              <option value="other">📌 Other</option>
             </select>
           </div>
           
@@ -205,7 +205,7 @@ const isLoading = ref(false);
 const isLoadingTask = ref(true);
 
 watch(() => formData.value.category, (newCategory) => {
-  showAttachment.value = newCategory.toLowerCase() !== 'other';
+  showAttachment.value = newCategory.toLowerCase() !== 'general';
 });
 
 onMounted(async () => {
@@ -260,7 +260,7 @@ onMounted(async () => {
       attachment: null,
       is_draft: taskData.is_draft ? '1' : '0'
     };
-    showAttachment.value = taskData.category?.toLowerCase() !== 'other';
+    showAttachment.value = taskData.category?.toLowerCase() !== 'general';
   } catch (error) {
     console.error('Error loading task:', error);
     errors.value = [error.message || 'Failed to load task. Please try again.'];

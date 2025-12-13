@@ -89,6 +89,9 @@ Route::post('/email/verification-notification', [AuthController::class, 'resendV
 // Contact form (public)
 Route::post('/contact', [ContactController::class, 'send']);
 
+// Chatbot questions (public)
+Route::get('/chatbot/questions', [UserController::class, 'getChatbotQuestions']);
+
 // Google OAuth ,redirectToGoogle and handleGoogleCallback moved to web.php for session support
 // Only the complete-registration endpoint stays here as it's called from frontend
 Route::post('/auth/google/complete-registration', [GoogleAuthController::class, 'completeRegistration'])->name('auth.google.complete');
@@ -105,7 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
      //     curl -X POST http://127.0.0.1:8000/api/logout \
     //   -H "Accept: application/json" \
     //   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-    
+
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index']);
     // curl -X GET http://127.0.0.1:8000/api/tasks \

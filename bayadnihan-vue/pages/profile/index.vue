@@ -371,7 +371,7 @@
                     :to="`/tasks/${task.id}`"
                     :style="taskCardLinkStyle"
                   >
-                    <div :style="taskCardStyle">
+                    <div :style="getTaskCardStyle(task.status)">
                       <div :style="taskCardContentStyle">
                         <div :style="taskCardLeftStyle">
                           <div :style="taskCardTitleStyle">{{ task.title }}</div>
@@ -1249,6 +1249,25 @@ const getStatusColorStyle = (status) => {
   };
 };
 
+const getTaskCardStyle = (status) => {
+  const borderColors = {
+    open: '#4e73df',        // Blue for open tasks
+    assigned: '#ff9800',    // Orange for assigned tasks
+    in_progress: '#ff9800', // Orange for in_progress tasks
+    completed: '#1cc88a',   // Green for completed tasks
+    cancelled: '#ae0925ff'  // Red for cancelled tasks
+  };
+  return {
+    background: '#fff',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '8px',
+    borderLeft: `3px solid ${borderColors[status] || '#4e73df'}`,
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    cursor: 'pointer'
+  };
+};
+
 const getDoneTaskStatusColorStyle = (status) => {
   const colors = {
     assigned: '#f6c23e',
@@ -1446,7 +1465,6 @@ const taskStatStrongCancelledStyle = { ...taskStatStrongStyle, color: '#e74a3b' 
 const taskStatSpanStyle = { color: '#858796', fontSize: '13px' };
 const taskListWrapperStyle = { marginTop: '16px' };
 const taskCardLinkStyle = { textDecoration: 'none', display: 'block' };
-const taskCardStyle = { background: '#fff', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: '3px solid #4e73df', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'pointer' };
 const taskCardDoneStyle = { background: '#fff', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: '3px solid #1cc88a', transition: 'transform 0.2s, box-shadow 0.2s' };
 const taskCardContentStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'start' };
 const taskCardLeftStyle = { flex: 1 };

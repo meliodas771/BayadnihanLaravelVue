@@ -51,7 +51,9 @@
       </nav>
       <div :style="mobileHeaderActionsStyle">
         <NuxtLink v-if="isLoggedIn" to="/tasks" :style="btnOutlineFull" @click="closeMobileMenu">Dashboard</NuxtLink>
-        <button v-if="isLoggedIn" @click="handleMobileLogout" :style="btnPrimaryFull">Logout</button>
+        <template v-if="isLoggedIn">
+          <button @click="handleMobileLogout" :style="btnPrimaryFull">Logout</button>
+        </template>
         <template v-else>
           <NuxtLink to="/auth/login" :style="btnOutlineFull" @click="closeMobileMenu">Login</NuxtLink>
           <NuxtLink to="/auth/register" :style="btnPrimaryFull" @click="closeMobileMenu">Register</NuxtLink>
@@ -214,6 +216,82 @@
       </div>
     </footer>
 
+    <!-- Chatbot Widget -->
+    <div :style="chatbotContainerStyle">
+      <!-- Chat Toggle Button -->
+      <button 
+        v-if="!showChatbot" 
+        @click="openChatbot" 
+        :style="chatbotToggleStyle"
+        :title="'Support Chat'"
+      >
+        🤖
+      </button>
+
+      <!-- Chat Window -->
+      <div v-else :style="chatbotWindowStyle">
+        <!-- Header -->
+        <div :style="chatbotHeaderStyle">
+          <div :style="{ display: 'flex', alignItems: 'center', gap: '8px' }">
+            <span :style="{ fontSize: '24px' }">🤖</span>
+            <div>
+              <h3 :style="{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: 'white' }">BayadNihan Chat Support</h3>
+              <p :style="{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.8)' }">AI Assistant (Not an AI yet)</p>
+            </div>
+          </div>
+          <button @click="closeChatbot" :style="chatbotCloseStyle">✕</button>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div :style="chatbotMessagesStyle" ref="chatContainer">
+          <div v-for="(message, index) in chatHistory" :key="message.id">
+            <!-- Question on the left (appears first) -->
+            <div v-if="message.side === 'left'" :style="{
+              ...chatbotMessageBotStyle,
+              marginBottom: '10px',
+              animation: 'fadeIn 0.3s ease-out',
+              maxWidth: '85%',
+              alignSelf: 'flex-start'
+            }">
+              <p :style="{ margin: 0, color: '#5a5c69', fontSize: '14px', lineHeight: '1.5' }">
+                {{ message.text }}
+              </p>
+            </div>
+
+            <!-- Answer on the right (appears second) -->
+            <div v-else :style="{
+              ...chatbotMessageUserStyle,
+              marginBottom: '10px',
+              animation: 'fadeIn 0.3s ease-out',
+              maxWidth: '85%',
+              alignSelf: 'flex-end'
+            }">
+              <p :style="{ margin: 0, color: 'white', fontSize: '14px' }">
+                {{ message.text }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Questions List (Buttons to click) -->
+        <div :style="chatbotInputStyle">
+          <div :style="{ padding: '12px', borderTop: '1px solid #e3e6f0' }">
+            <p :style="{ margin: 0, fontSize: '12px', color: '#858796', marginBottom: '10px', fontWeight: '600' }">Popular Questions:</p>
+            <div :style="{ display: 'flex', flexDirection: 'column', gap: '6px' }">
+              <button
+                v-for="item in uniqueChatbotQuestions"
+                :key="item.id || item.question"
+                @click="askQuestion(item)"
+                :style="chatbotQuestionButtonStyle"
+              >
+                {{ item.question }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Logout Modal -->
     <div v-if="showLogoutModal" :style="modalStyle" @click="closeLogoutModal">
       <div :style="modalContentStyle" @click.stop>
@@ -234,8 +312,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { useRuntimeConfig } from '#app';
 import { useUser } from '~/composables/useUser';
 import { useAPI } from '~/utils/api';
 import studenthelpImage from '~/assets/images/studenthelp.jpg';
@@ -250,6 +329,30 @@ const { authAPI } = useAPI();
 const isMobileMenuOpen = ref(false);
 const showLogoutModal = ref(false);
 const isMobile = ref(false);
+const showChatbot = ref(false);
+const chatbotQuestions = ref([]);
+const chatContainer = ref(null);
+
+const uniqueChatbotQuestions = computed(() => {
+  const seen = new Set();
+  return chatbotQuestions.value.filter((q) => {
+    const key = q.id ?? q.question;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+});
+
+const chatHistory = ref([]);
+
+// Auto-scroll chat to latest message
+watch(chatHistory, async () => {
+  await nextTick();
+  const el = chatContainer.value;
+  if (el) {
+    el.scrollTop = el.scrollHeight;
+  }
+}, { deep: true });
 
 const isLoggedIn = computed(() => isAuthenticated.value);
 
@@ -301,7 +404,7 @@ onMounted(() => {
   if (process.client) {
     window.addEventListener('resize', checkMobile);
   }
-  // Redirect authenticated users to tasks page
+  loadChatbotQuestions();
   if (isAuthenticated.value) {
     navigateTo('/tasks', { replace: true });
   }
@@ -354,6 +457,55 @@ const handleLogout = async () => {
 const handleMobileLogout = () => {
   showLogoutConfirmation();
   closeMobileMenu();
+};
+
+const loadChatbotQuestions = async () => {
+  try {
+    const config = useRuntimeConfig();
+    const API_BASE_URL = config.public.apiBaseUrl || 'http://127.0.0.1:8000/api';
+    const response = await fetch(`${API_BASE_URL}/chatbot/questions`);
+    const data = await response.json();
+    if (data.success && data.data && data.data.length > 0) {
+      // Create a map to ensure unique questions by ID
+      const uniqueQuestions = new Map();
+      data.data.forEach(q => {
+        if (q.id && q.question) {
+          uniqueQuestions.set(q.id, q);
+        }
+      });
+      // Convert back to array
+      chatbotQuestions.value = Array.from(uniqueQuestions.values());
+    }
+  } catch (error) {
+    console.error('Failed to load chatbot questions:', error);
+    // Keep the default questions if API fails
+  }
+};
+
+const openChatbot = () => {
+  showChatbot.value = true;
+};
+
+const closeChatbot = () => {
+  showChatbot.value = false;
+};
+
+const askQuestion = (questionItem) => {
+  const baseId = Date.now();
+
+  // Question on the left (appears first/above)
+  chatHistory.value.push({
+    id: baseId,
+    side: 'left',
+    text: questionItem.question
+  });
+
+  // Answer on the right (appears second/below)
+  chatHistory.value.push({
+    id: baseId + 1,
+    side: 'right',
+    text: questionItem.answer
+  });
 };
 
 const getMobileMenuStyle = () => {
@@ -459,6 +611,147 @@ const btnPrimary = computed(() => ({ ...btnStyle, ...btnPrimaryStyle }));
 const btnDanger = computed(() => ({ ...btnStyle, ...btnDangerStyle }));
 const btnOutlineFull = computed(() => ({ ...btnStyle, ...btnOutlineStyle, width: '100%', textAlign: 'center' }));
 const btnPrimaryFull = computed(() => ({ ...btnStyle, ...btnPrimaryStyle, width: '100%' }));
+
+// Chatbot Styles
+const chatbotToggleStyle = {
+  position: 'fixed',
+  bottom: '2rem',
+  right: '2rem',
+  width: '60px',
+  height: '60px',
+  borderRadius: '50%',
+  background: '#4e73df',
+  border: 'none',
+  color: 'white',
+  fontSize: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+  transition: 'all 0.3s ease',
+  zIndex: 1000,
+  '&:hover': {
+    transform: 'scale(1.05)',
+    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)'
+  },
+  '&:active': {
+    transform: 'scale(0.95)'
+  }
+};
+
+const chatbotContainerStyle = {
+  position: 'fixed',
+  bottom: '2rem',
+  right: '2rem',
+  zIndex: 1000,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  gap: '1rem'
+};
+
+const chatbotWindowStyle = {
+  width: '350px',
+  maxWidth: '90vw',
+  height: '500px',
+  maxHeight: '80vh',
+  background: 'white',
+  borderRadius: '12px',
+  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden'
+};
+
+const chatbotHeaderStyle = {
+  background: '#4e73df',
+  padding: '1rem',
+  color: 'white',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center'
+};
+
+const chatbotCloseStyle = {
+  background: 'none',
+  border: 'none',
+  color: 'white',
+  fontSize: '1.2rem',
+  cursor: 'pointer',
+  padding: '0.25rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  '&:hover': {
+    opacity: 0.8
+  }
+};
+
+const chatbotMessagesStyle = {
+  flex: 1,
+  padding: '1rem',
+  overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '0.75rem'
+};
+
+const chatbotMessageBotStyle = {
+  alignSelf: 'flex-start',
+  background: '#f8f9fc',
+  borderRadius: '0 12px 12px 12px',
+  padding: '0.75rem 1rem',
+  maxWidth: '80%'
+};
+
+const chatbotMessageUserStyle = {
+  alignSelf: 'flex-end',
+  background: '#4e73df',
+  color: 'white',
+  borderRadius: '12px 0 12px 12px',
+  padding: '0.75rem 1rem',
+  maxWidth: '80%'
+};
+
+const chatbotInputStyle = {
+  borderTop: '1px solid #e3e6f0',
+  padding: '0.75rem',
+  height: '20vh',
+  maxHeight: '20vh',
+  overflowY: 'auto'
+};
+
+const chatbotQuestionButtonStyle = {
+  width: '100%',
+  padding: '0.5rem 1rem',
+  borderRadius: '8px',
+  border: '1px solid #e3e6f0',
+  background: 'white',
+  textAlign: 'left',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  fontSize: '0.9rem',
+  '&:hover': {
+    background: '#f8f9fc',
+    borderColor: '#d1d3e2'
+  }
+};
+
+const chatbotResetButtonStyle = {
+  background: 'none',
+  border: 'none',
+  color: '#4e73df',
+  cursor: 'pointer',
+  fontSize: '0.9rem',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.25rem',
+  margin: '0 auto',
+  '&:hover': {
+    textDecoration: 'underline'
+  }
+};
 const btnOutlineModal = computed(() => ({ ...btnStyle, ...btnOutlineStyle, margin: 0, padding: '10px 20px', fontSize: '14px' }));
 const btnDangerModal = computed(() => ({ ...btnStyle, ...btnDangerStyle, margin: 0, padding: '10px 20px', fontSize: '14px' }));
 
@@ -469,9 +762,29 @@ const burgerSpan3 = computed(() => ({ ...burgerSpanStyle, transform: isMobileMen
 const mobileNavStyle = computed(() => ({ ...navStyle, flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }));
 const mobileNavLinkStyle = computed(() => ({ ...navLinkStyle, padding: '0.5rem 0', borderBottom: '1px solid #eee' }));
 const mobileHeaderActionsStyle = computed(() => ({ ...headerActionsStyle, flexDirection: 'column', gap: '0.5rem' }));
+
+// In Vue 3 <script setup>, all top-level bindings are automatically available to the template
+// No need to return anything
 </script>
 
 <style scoped>
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}
+
+.chat-message {
+  margin-bottom: 10px;
+  animation: fadeIn 0.3s ease-out;
+}
+
 /* Feature Cards Hover Animation */
 .feature-card {
   cursor: pointer;
@@ -533,9 +846,16 @@ const mobileHeaderActionsStyle = computed(() => ({ ...headerActionsStyle, flexDi
 /* Testimonial Cards Hover Animation */
 .testimonial-card-animated {
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .testimonial-card-animated::before {
@@ -546,18 +866,18 @@ const mobileHeaderActionsStyle = computed(() => ({ ...headerActionsStyle, flexDi
   font-size: 3rem;
   opacity: 0;
   transform: rotate(-15deg) scale(0.5);
-  transition: all 0.4s ease;
+  transition: all 0.3s ease;
+  z-index: 1;
 }
 
 .testimonial-card-animated:hover {
-  transform: translateY(-10px) rotate(-1deg);
-  box-shadow: 0 20px 45px rgba(78, 115, 223, 0.3);
-  background: linear-gradient(135deg, #f8f9fc 0%, #e8eaf6 100%);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .testimonial-card-animated:hover::before {
   opacity: 0.1;
-  transform: rotate(0deg) scale(1);
+  transform: rotate(0) scale(1);
 }
 
 /* Icon Animations on Hover */
@@ -592,5 +912,15 @@ const mobileHeaderActionsStyle = computed(() => ({ ...headerActionsStyle, flexDi
 .step-card:hover h3,
 .testimonial-card-animated:hover h4 {
   color: #4e73df;
+}
+
+/* Ensure all elements have proper transitions */
+.testimonial-card-animated {
+  transition: all 0.3s ease;
+}
+
+.testimonial-card-animated:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 </style>

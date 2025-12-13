@@ -13,12 +13,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Temporarily disable CORS middleware for debugging
+        // $middleware->api(prepend: [
+        //     \App\Http\Middleware\CorsMiddleware::class,
+        // ]);
+
         // Register route middleware aliases
         $middleware->alias([
             'admin.port' => App\Http\Middleware\EnsureAdminPort::class,
             'prevent.back' => App\Http\Middleware\PreventBackHistory::class,
         ]);
-        
+
         // Apply PreventBackHistory to web middleware group
         $middleware->web(append: [
             App\Http\Middleware\PreventBackHistory::class,

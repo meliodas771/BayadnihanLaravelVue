@@ -31,13 +31,15 @@ class NotificationController extends Controller
 
 	public function markAllRead()
 	{
-		Notification::where('user_id', auth()->id())->update(['read' => true]);
+		Notification::where('user_id', auth()->id())
+		->update(['read' => true]);
 		return response()->json(['success' => true, 'message' => 'All notifications marked as read']);
 	}
 
 	public function delete($id)
 	{
-		$notification = Notification::where('id', $id)->where('user_id', auth()->id())->first();
+		$notification = Notification::where('id', $id)
+		->where('user_id', auth()->id())->first();
 		if ($notification) {
 			$notification->delete();
 			return response()->json(['success' => true, 'message' => 'Notification deleted successfully']);

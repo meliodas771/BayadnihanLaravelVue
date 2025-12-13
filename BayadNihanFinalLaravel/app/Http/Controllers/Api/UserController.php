@@ -87,6 +87,7 @@ class UserController extends Controller
 			->leftJoin('users as u', 'a.doer_id', '=', 'u.id')
 			->where('t.poster_id', $userId)
 			->where('t.is_draft', false)
+			->where('t.status', '!=', 'cancelled')
 			->select('t.*', 'u.username as doer_username')
 			->orderByDesc('t.created_at')
 			->get();
@@ -358,7 +359,7 @@ class UserController extends Controller
 						->where('f.from_user_id', '=', DB::raw('t.poster_id'));
 				})
 				->where('t.poster_id', $userId)
-				->where('t.status', 'completed')
+				->whereIn('t.status', ['open', 'assigned', 'in_progress'])
 				->select('t.*', 'u.username as doer_username', 'u.id as doer_id', 'f.rating as feedback_rating', 'f.reviews as feedback_reviews')
 				->orderByDesc('t.updated_at')
 				->get();
@@ -442,6 +443,16 @@ class UserController extends Controller
 		return response()->file($path, [
 			'Content-Type' => $mimeType,
 			'Cache-Control' => 'public, max-age=3600',
+		]);
+	}
+
+	public function getChatbotQuestions()
+	{
+		$chatbots = \App\Models\Chatbot::active()->ordered()->get();
+		
+		return response()->json([
+			'success' => true,
+			'data' => $chatbots
 		]);
 	}
 }

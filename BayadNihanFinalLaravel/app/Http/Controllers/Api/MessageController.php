@@ -110,7 +110,7 @@ class MessageController extends Controller
 			'sent_at' => now('UTC'),
 		]);
 
-		// Try to broadcast, but don't fail if Pusher/Reverb is unavailable
+		// Try to broadcast, but don't fail even if Pusher/Reverb is unavailable
 		try {
 			event(new MessageSent($msg->load('sender')));
 		} catch (\Exception $e) {

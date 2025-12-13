@@ -153,14 +153,14 @@ class GoogleAuthController extends Controller
     {
         // Check if email ends with .edu or specific educational domains
         $educationalDomains = [
-            '.edu',
+            'carsu.edu.ph',
             '.edu.ph',
             '.ust.edu.ph',
             '.dlsu.edu.ph',
             '.up.edu.ph',
             '.admu.edu.ph',
             '.ateneo.edu',
-            'carsu.edu.ph',
+            
         ];
 
         foreach ($educationalDomains as $domain) {

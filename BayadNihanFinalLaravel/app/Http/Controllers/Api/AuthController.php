@@ -88,7 +88,7 @@ class AuthController extends Controller
 		$data = $request->validate([
 			'username' => ['required','string','regex:/^\d{3}-\d{5}$/','unique:users,username'], //regular expressions for the username
 			'email' => ['required','email','regex:/^[A-Za-z0-9._%+-]+@carsu\.edu\.ph$/i','unique:users,email'], //regular expressions for the email
-			'password' => ['required','string','min:6','regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/'],
+			'password' => ['required','string','min:6','regex:/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/'], //regular expressions for the password 1 Uppercase Letter, 1 Number, 1 Special Character
 			'role' => 'nullable|string',
 			'phone_number' => 'nullable|string',
 		], [

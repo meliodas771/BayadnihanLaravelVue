@@ -23,7 +23,7 @@
             If you have any questions about these Terms of Service, please contact us at:
           </p>
           <p :style="contactInfoStyle">
-            <strong>Email:</strong> support@bayadnihan.com<br>
+            <strong>Email:</strong> bayadnihan@gmail.com<br>
             <strong>Phone:</strong> (+63) 912 345 6789
           </p>
         </div>
@@ -61,9 +61,9 @@ const sections = [
     content: [
       'BayadNihan offers three role options:',
       [
-        '<strong>Poster:</strong> Users who post tasks and need services completed. Posters are responsible for providing clear task descriptions, setting reasonable budgets, and making timely payments.',
-        '<strong>Doer:</strong> Users who complete tasks and earn money. Doers are responsible for completing tasks as described, communicating effectively, and delivering quality work.',
-        '<strong>Both:</strong> Users who can both post and complete tasks. This role may require a subscription after a 7-day free trial period.'
+        'Poster: Users who post tasks and need services completed. Posters are responsible for providing clear task descriptions, setting reasonable budgets, and making timely payments.',
+        'Doer: Users who complete tasks and earn money. Doers are responsible for completing tasks as described, communicating effectively, and delivering quality work.',
+        'Both: Users who can both post and complete tasks. This role may require a subscription after a 7-day free trial period.'
       ],
       'You agree to use your selected role(s) responsibly and in accordance with all applicable laws and school policies.'
     ]

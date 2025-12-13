@@ -26,7 +26,7 @@ class FeedbackController extends Controller
 			return response()->json(['error' => 'Task must be completed before giving feedback'], 400);
 		}
 
-		// Check if THIS USER already submitted feedback (not just any feedback)
+		// Check if THIS USER already submitted feedback
 		if ($task->doer_id && Feedback::where('task_id', $taskId)
 			->where('from_user_id', $userId)
 			->where('to_user_id', $task->doer_id)
@@ -58,7 +58,7 @@ class FeedbackController extends Controller
 			return response()->json(['error' => 'No doer assigned to this task'], 400);
 		}
 
-		// Check if THIS USER already submitted feedback (not just any feedback)
+		// Check if THIS USER already submitted feedback
 		if (Feedback::where('task_id', $taskId)
 			->where('from_user_id', $userId)
 			->where('to_user_id', $task->doer_id)

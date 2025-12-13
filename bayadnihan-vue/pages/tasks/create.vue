@@ -50,12 +50,12 @@
                 :style="inputStyle"
               >
                 <option value="">Select Category</option>
+                <option value="general">📌 General</option>
                 <option value="grocery">🛒 Grocery</option>
                 <option value="laundry">👕 Laundry</option>
                 <option value="tutoring">📚 Tutoring</option>
                 <option value="powerpoint">💻 PowerPoint</option>
                 <option value="academics">📋 Academics</option>
-                <option value="other">📌 Other</option>
               </select>
             </div>
             
@@ -206,7 +206,7 @@ const showAttachment = ref(true);
 const isLoading = ref(false);
 
 watch(() => formData.value.category, (newCategory) => {
-  showAttachment.value = newCategory.toLowerCase() !== 'other';
+  showAttachment.value = newCategory.toLowerCase() !== 'general';
 });
 
 const handleInputChange = (e) => {
