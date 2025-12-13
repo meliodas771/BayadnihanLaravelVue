@@ -229,7 +229,7 @@
       </button>
 
       <!-- Chat Window -->
-      <div v-else :style="chatbotWindowStyle">
+      <div v-else :style="chatbotWindowStyle" ref="chatbotWindow">
         <!-- Header -->
         <div :style="chatbotHeaderStyle">
           <div :style="{ display: 'flex', alignItems: 'center', gap: '8px' }">
@@ -332,6 +332,7 @@ const isMobile = ref(false);
 const showChatbot = ref(false);
 const chatbotQuestions = ref([]);
 const chatContainer = ref(null);
+const chatbotWindow = ref(null);
 
 const uniqueChatbotQuestions = computed(() => {
   const seen = new Set();
@@ -399,10 +400,20 @@ const checkMobile = () => {
   }
 };
 
+const handleClickOutsideChatbot = (event) => {
+  if (!showChatbot.value) return;
+  const el = chatbotWindow.value;
+  if (!el) return;
+  if (!el.contains(event.target)) {
+    showChatbot.value = false;
+  }
+};
+
 onMounted(() => {
   checkMobile();
   if (process.client) {
     window.addEventListener('resize', checkMobile);
+    document.addEventListener('mousedown', handleClickOutsideChatbot);
   }
   loadChatbotQuestions();
   if (isAuthenticated.value) {
@@ -420,6 +431,7 @@ watch(isAuthenticated, (newValue) => {
 onUnmounted(() => {
   if (process.client) {
     window.removeEventListener('resize', checkMobile);
+    document.removeEventListener('mousedown', handleClickOutsideChatbot);
   }
 });
 

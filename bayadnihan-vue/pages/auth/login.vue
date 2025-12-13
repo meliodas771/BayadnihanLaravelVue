@@ -474,6 +474,7 @@ const keyframes = `
       display: flex;
       flex-direction: column;
       justify-content: center;
+      
     }
     .react-container::before {
       display: none;
