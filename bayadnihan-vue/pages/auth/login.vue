@@ -522,7 +522,7 @@ const containerBeforeStyle = {
 
 const logoStyle = {
   textAlign: 'center',
-  marginBottom: '30px'
+  marginBottom: '20px',
 };
 
 const logoIconStyle = {

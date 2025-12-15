@@ -42,6 +42,8 @@ Route::post('/register', [AuthController::class, 'register']);
 //   }'
 
 Route::get('/auth/check', [AuthController::class, 'checkAuth']);
+
+
 Route::post('/forgot-password', [AuthController::class, 'sendResetCode']);
 # Send Reset Code
 // curl -X POST http://127.0.0.1:8000/api/password/forgot-password \
