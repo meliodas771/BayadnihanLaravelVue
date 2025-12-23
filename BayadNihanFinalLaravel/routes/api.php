@@ -84,8 +84,8 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 //     "password_confirmation": "newpassword123"
 //   }'
 
-// Email Verification
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify');
+// Email Verification - API route (returns JSON)
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify.api');
 Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])->name('verification.send');
 
 // Contact form (public)

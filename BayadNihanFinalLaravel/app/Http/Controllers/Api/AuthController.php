@@ -430,6 +430,64 @@ class AuthController extends Controller
 		]);
 	}
 
+	/**
+	 * Handle email verification web request - returns HTML page
+	 */
+	public function verifyEmailWeb(Request $request)
+	{
+		$user = User::find($request->route('id'));
+		
+		if (!$user) {
+			return view('emails.verification-result', [
+				'success' => false,
+				'message' => 'User not found. Please contact support.',
+				'username' => 'User'
+			]);
+		}
+		
+		if ($user->hasVerifiedEmail()) {
+			return view('emails.verification-result', [
+				'success' => true,
+				'message' => 'Email already verified! You can now login from the browser where you registered.',
+				'username' => $user->username
+			]);
+		}
+		
+		// Verify the hash matches the email
+		if (!hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
+			return view('emails.verification-result', [
+				'success' => false,
+				'message' => 'Invalid verification link. Please request a new verification email.',
+				'username' => $user->username
+			]);
+		}
+		
+		// Verify the signed URL
+		if (!URL::hasValidSignature($request)) {
+			return view('emails.verification-result', [
+				'success' => false,
+				'message' => 'Invalid or expired verification link. Please request a new verification email.',
+				'username' => $user->username
+			]);
+		}
+		
+		if ($user->markEmailAsVerified()) {
+			event(new \Illuminate\Auth\Events\Verified($user));
+		}
+		
+		// Custom success message for trial users
+		$message = 'Thank you for verifying your email! Your account has been activated successfully. You are good to login now';
+		if ($user->subscription_status === 'trial' && $user->role === 'both') {
+			$message = 'Thank you for verifying your email! Your 7-day free trial has started. Enjoy full access to both Poster and Doer roles! You are good to login now';
+		}
+		
+		return view('emails.verification-result', [
+			'success' => true,
+			'message' => $message,
+			'username' => $user->username
+		]);
+	}
+
 	public function resendVerificationEmail(Request $request)
 	{
 		$request->validate(['email' => 'required|email']);
