@@ -127,22 +127,6 @@
             </div>
           </div>
 
-          <!-- Tasks You Posted Section -->
-          <div v-if="showPostedTasks && postedTasks.length > 0" class="card" :style="cardStyle">
-            <h3 :style="sectionTitleStyle">Tasks You Posted</h3>
-            <div :style="taskListStyle">
-              <div v-for="task in postedTasks" :key="task.id" :style="taskItemStyle">
-                <div :style="taskTitleStyle">{{ task.title }}</div>
-                <div :style="taskMetaStyle">
-                  Status: {{ task.status }} |
-                  <span :style="taskPriceStyle">₱{{ formatPrice(task.price) }}</span>
-                  <span v-if="task.doer_username"> | Doer: {{ maskUsername(task.doer_username) }}</span>
-                </div>
-                <NuxtLink :to="`/tasks/${task.id}`" :style="{ ...btnStyle, marginTop: '8px', display: 'inline-block' }">View Task</NuxtLink>
-              </div>
-            </div>
-          </div>
-
           <!-- Empty State -->
           <div v-if="!showCompletedTasks && !showPostedTasks" class="card" :style="cardStyle">
             <div :style="emptyStateStyle">
