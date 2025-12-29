@@ -97,51 +97,51 @@ class AuthController extends Controller
 			'password.regex' => 'Password must be at least 6 characters with 1 uppercase letter, 1 number, and 1 special character.',
 		]);
 
-		//Verify that the student ID and email exist in the school system via API
-		try {
-			$apiUrl = env('SCHOOL_API_URL') . '/api/verify-student';
+		// //Verify that the student ID and email exist in the school system via API
+		// try {
+		// 	$apiUrl = env('SCHOOL_API_URL') . '/api/verify-student';
 
-			// Send POST request with student_id and email
-			$response = Http::timeout(10)->post($apiUrl, [
-				'student_id' => $data['username'],
-				'email' => $data['email'],
-			]);
+		// 	// Send POST request with student_id and email
+		// 	$response = Http::timeout(10)->post($apiUrl, [
+		// 		'student_id' => $data['username'],
+		// 		'email' => $data['email'],
+		// 	]);
 
-			// Check if API connection succeeded
-			if (!$response->successful()) {
-				return response()->json([
-					'error' => 'Student ID or email not found in the school system.'
-				], 400);
-			}
+		// 	// Check if API connection succeeded
+		// 	if (!$response->successful()) {
+		// 		return response()->json([
+		// 			'error' => 'Student ID or email not found in the school system.'
+		// 		], 400);
+		// 	}
 
-			$result = $response->json();
+		// 	$result = $response->json();
 
-			// Step 1: Check if student ID exists
-			if (empty($result['student_exists']) || !$result['student_exists']) {
-				return response()->json([
-					'error' => 'Student ID not found in the school system.'
-				], 404);
-			}
+		// 	// Step 1: Check if student ID exists
+		// 	if (empty($result['student_exists']) || !$result['student_exists']) {
+		// 		return response()->json([
+		// 			'error' => 'Student ID not found in the school system.'
+		// 		], 404);
+		// 	}
 
-			// Step 2: Check if email matches
-			if (empty($result['email_matches']) || !$result['email_matches']) {
-				return response()->json([
-					'error' => 'The email does not match this student ID.'
-				], 400);
-			}
+		// 	// Step 2: Check if email matches
+		// 	if (empty($result['email_matches']) || !$result['email_matches']) {
+		// 		return response()->json([
+		// 			'error' => 'The email does not match this student ID.'
+		// 		], 400);
+		// 	}
 
-			// Step 3: Check if student is enrolled
-			if (empty($result['enrolled']) || !$result['enrolled']) {
-				return response()->json([
-					'error' => 'This student exists but is not currently enrolled.'
-				], 400);
-			}
+		// 	// Step 3: Check if student is enrolled
+		// 	if (empty($result['enrolled']) || !$result['enrolled']) {
+		// 		return response()->json([
+		// 			'error' => 'This student exists but is not currently enrolled.'
+		// 		], 400);
+		// 	}
 
-		} catch (\Exception $e) {
-			return response()->json([
-				'error' => 'Unable to connect to school system. Error: ' . $e->getMessage()
-			], 500);
-		}
+		// } catch (\Exception $e) {
+		// 	return response()->json([
+		// 		'error' => 'Unable to connect to school system. Error: ' . $e->getMessage()
+		// 	], 500);
+		// }
 
 		// Determine subscription status and trial period
 		$subscriptionStatus = 'active';
