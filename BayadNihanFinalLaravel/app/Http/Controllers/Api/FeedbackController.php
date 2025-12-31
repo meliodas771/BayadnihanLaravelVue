@@ -54,7 +54,7 @@ class FeedbackController extends Controller
 			return response()->json(['error' => 'Task must be completed before giving feedback'], 400);
 		}
 
-		if (!$task->doer_id) {
+		if (!$task->doer_id) { 
 			return response()->json(['error' => 'No doer assigned to this task'], 400);
 		}
 

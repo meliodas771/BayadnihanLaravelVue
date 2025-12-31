@@ -145,7 +145,7 @@ class TaskController extends Controller
 				'application/msword',
 				'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 			];
-			$fileMime = $file->getMimeType();
+			$fileMime = $file->getMimeType(); //Multipurpose Internet Mail Extensions
 			
 			if (!in_array($fileMime, $allowedMimes)) {
 				return response()->json(['error' => 'Invalid file type. Only images and documents are allowed.'], 400);
