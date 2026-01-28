@@ -107,7 +107,7 @@ class MessageController extends Controller
 			'receiver_id' => $receiverId,
 			'content' => $data['content'] ?? '',
 			'image_url' => $imageUrl,
-			'sent_at' => now('UTC'),
+			'sent_at' => now('UTC'), //Coordinated Universal Time
 		]);
 
 		// Try to broadcast, but don't fail even if Pusher/Reverb is unavailable
