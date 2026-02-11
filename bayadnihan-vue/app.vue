@@ -87,15 +87,20 @@ onMounted(() => {
   box-sizing: border-box;
 }
 
-body {
+html, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 .main-layout {
   display: flex;
   min-height: 100vh;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .main-content {
@@ -114,11 +119,15 @@ body {
   .main-content {
     margin-left: 0 !important;
     width: 100% !important;
-    padding-top: 70px;
+    max-width: 100vw !important;
+    padding: 15px !important;
+    padding-bottom: 90px !important;
+    overflow-x: hidden !important;
   }
   
   .main-layout {
     position: relative;
+    overflow-x: hidden;
   }
 }
 </style>

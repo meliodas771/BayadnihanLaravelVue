@@ -16,8 +16,8 @@ export default defineNuxtPlugin(() => {
   // Create Echo instance with Reverb configuration
   const echo = new Echo({
     broadcaster: 'reverb',
-    key: 'localkey',
-    wsHost: '127.0.0.1',
+    key: '8vduxcelwduemnhcsond',
+    wsHost: 'localhost',
     wsPort: 8080,
     wssPort: 8080,
     forceTLS: false,

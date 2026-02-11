@@ -1,15 +1,7 @@
 <template>
   <div>
-    <button 
-      class="mobile-menu-toggle" 
-      :style="mobileMenuToggleStyle"
-      @click="toggleSidebar"
-    >
-      ☰
-    </button>
-    
-    <!-- Sidebar -->
-    <div :style="sidebarStyle" id="sidebar" class="sidebar">
+    <!-- Desktop Sidebar -->
+    <div :style="sidebarStyle" id="sidebar" class="sidebar desktop-sidebar">
       <span :style="brandStyle">🤝 BayadNihan</span>
       
       <nav :style="navStyle">
@@ -100,6 +92,119 @@
       </div>
     </div>
 
+    <!-- Mobile Bottom Navigation -->
+    <div :style="bottomNavStyle" class="bottom-nav">
+      <a 
+        href="/tasks" 
+        :style="getBottomNavItemStyle('/tasks')"
+        @click.prevent="navigateTo('/tasks')"
+        class="bottom-nav-item"
+      >
+        <svg :style="bottomNavIconStyle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="9" y1="9" x2="15" y2="9"></line>
+          <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+        <span :style="bottomNavLabelStyle">Tasks</span>
+      </a>
+      
+      <a 
+        v-if="user && user.role !== 'doer'"
+        href="/tasks/create" 
+        :style="getBottomNavItemStyle('/tasks/create')"
+        @click.prevent="navigateTo('/tasks/create')"
+        class="bottom-nav-item"
+      >
+        <svg :style="bottomNavIconStyle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        <span :style="bottomNavLabelStyle">Create</span>
+      </a>
+      
+      <a 
+        href="/notifications" 
+        :style="getBottomNavItemStyle('/notifications')"
+        @click.prevent="navigateTo('/notifications')"
+        class="bottom-nav-item"
+      >
+        <div style="position: relative; display: inline-block;">
+          <svg :style="bottomNavIconStyle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span v-if="unreadNotificationCount > 0" :style="bottomNavBadgeStyle">
+            {{ unreadNotificationCount }}
+          </span>
+        </div>
+        <span :style="bottomNavLabelStyle">Notification</span>
+      </a>
+      
+      <a 
+        href="/profile" 
+        :style="getBottomNavItemStyle('/profile')"
+        @click.prevent="navigateTo('/profile')"
+        class="bottom-nav-item"
+      >
+        <svg :style="bottomNavIconStyle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span :style="bottomNavLabelStyle">Profile</span>
+      </a>
+      
+      <button
+        type="button"
+        :style="getBottomNavItemStyle('settings')"
+        @click="toggleMobileSettings"
+        class="bottom-nav-item"
+      >
+        <svg :style="bottomNavIconStyle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m5.2-13.2l-4.2 4.2m-2 2l-4.2 4.2M23 12h-6m-6 0H1m18.2 5.2l-4.2-4.2m-2-2l-4.2-4.2"></path>
+        </svg>
+        <span :style="bottomNavLabelStyle">Settings</span>
+      </button>
+    </div>
+
+    <!-- Mobile Settings Modal -->
+    <div 
+      v-if="showMobileSettings"
+      :style="mobileSettingsOverlayStyle"
+      @click="showMobileSettings = false"
+    >
+      <div 
+        :style="mobileSettingsMenuStyle"
+        @click.stop
+      >
+        <div :style="mobileSettingsHeaderStyle">
+          <h3 :style="mobileSettingsHeaderH3Style">Settings</h3>
+          <button 
+            :style="mobileSettingsCloseStyle"
+            @click="showMobileSettings = false"
+          >
+            &times;
+          </button>
+        </div>
+        <div :style="mobileSettingsContentStyle">
+          <a 
+            href="/report/create" 
+            :style="mobileSettingsLinkStyle"
+            @click.prevent="navigateToAndClose('/report/create')"
+          >
+            Report User
+          </a>
+          <button 
+            type="button" 
+            :style="mobileSettingsLogoutStyle"
+            @click="showLogoutModal = true; showMobileSettings = false"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Logout Confirmation Modal -->
     <div 
       v-if="showLogoutModal"
@@ -160,8 +265,10 @@ const { authAPI, notificationsAPI, userAPI } = useAPI();
 const { $echo } = useNuxtApp();
 
 const showSettings = ref(false);
+const showMobileSettings = ref(false);
 const showLogoutModal = ref(false);
 const unreadNotificationCount = ref(0);
+const isMobile = ref(false);
 
 const keyframes = `
   @keyframes slideDown {
@@ -174,31 +281,19 @@ const keyframes = `
       opacity: 1;
     }
   }
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-  }
-  @media (max-width: 768px) {
-    .mobile-menu-toggle { display: block !important; }
-    .sidebar { 
-      transform: translateX(-100%) !important; 
-      width: 0 !important;
-      overflow: hidden !important;
-      pointer-events: none !important;
-    }
-    .sidebar.active { 
-      transform: translateX(0) !important; 
-      width: 250px !important;
-      pointer-events: auto !important;
-    }
-    .main-content { 
-      margin-left: 0 !important; 
-      width: 100% !important; 
-      padding-top: 70px !important; 
-    }
-    .main-layout {
-      margin-left: 0 !important;
-    }
   }
 `;
 
@@ -223,21 +318,6 @@ const fetchUnreadNotifications = async () => {
   }
 };
 
-const isMobile = ref(false);
-const sidebarActive = ref(false);
-
-const updateMobileState = () => {
-  if (process.client) {
-    isMobile.value = window.innerWidth <= 768;
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar && isMobile.value && !sidebar.classList.contains('active')) {
-      sidebar.style.transform = 'translateX(-100%)';
-    } else if (sidebar && !isMobile.value) {
-      sidebar.style.transform = 'translateX(0)';
-      sidebar.classList.remove('active');
-    }
-  }
-};
 
 // Fetch user profile to ensure we have latest data including profile_pic
 const fetchUserProfile = async () => {
@@ -254,6 +334,13 @@ const fetchUserProfile = async () => {
     }
   } catch (error) {
     console.error('Error fetching user profile:', error);
+  }
+};
+
+// Update mobile state
+const updateMobileState = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth <= 768;
   }
 };
 
@@ -280,55 +367,25 @@ onMounted(() => {
   if (user.value && !user.value.profile_pic) {
     fetchUserProfile();
   }
-  
+
+  // Update mobile state
   updateMobileState();
-  
-  const setBurgerVisibility = () => {
-    const sidebar = document.getElementById('sidebar');
-    const toggle = document.querySelector('.mobile-menu-toggle');
-    if (!toggle || !sidebar) return;
-    if (window.innerWidth <= 768) {
-      if (sidebar.classList.contains('active')) {
-        toggle.style.display = 'none';
-      } else {
-        toggle.style.display = 'block';
-      }
-    } else {
-      toggle.style.display = 'none';
-      sidebar.classList.remove('active');
-    }
-  };
-
-  const handleClickOutside = (event) => {
-    const sidebar = document.getElementById('sidebar');
-    const toggle = document.querySelector('.mobile-menu-toggle');
-    if (!sidebar || !toggle) return;
-    if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
-      if (!sidebar.contains(event.target) && !toggle.contains(event.target)) {
-        closeSidebar();
-      }
-    }
-  };
-
-  const handleResize = () => {
-    updateMobileState();
-    setBurgerVisibility();
-  };
 
   // Listen for notification read events
   const handleNotificationRead = () => {
     fetchUnreadNotifications();
   };
 
-  window.addEventListener('resize', handleResize);
-  document.addEventListener('click', handleClickOutside);
+  const handleResize = () => {
+    updateMobileState();
+  };
+
   window.addEventListener('notification-read', handleNotificationRead);
-  setBurgerVisibility();
+  window.addEventListener('resize', handleResize);
 
   onUnmounted(() => {
-    window.removeEventListener('resize', handleResize);
-    document.removeEventListener('click', handleClickOutside);
     window.removeEventListener('notification-read', handleNotificationRead);
+    window.removeEventListener('resize', handleResize);
     
     // Clean up Echo listener
     if (user.value && user.value.id && $echo) {
@@ -349,6 +406,15 @@ const toggleSettings = () => {
     dropdown.classList.toggle('active');
     arrow.textContent = dropdown.classList.contains('active') ? '▲' : '▼';
   }
+};
+
+const toggleMobileSettings = () => {
+  showMobileSettings.value = !showMobileSettings.value;
+};
+
+const navigateToAndClose = (path) => {
+  showMobileSettings.value = false;
+  router.push(path);
 };
 
 const handleLogout = async () => {
@@ -372,42 +438,7 @@ const isActiveLink = (path) => {
   return route.path === path;
 };
 
-const closeSidebar = () => {
-  if (!process.client) return;
-  const sidebar = document.getElementById('sidebar');
-  const toggle = document.querySelector('.mobile-menu-toggle');
-  if (sidebar) {
-    sidebar.classList.remove('active');
-    sidebarActive.value = false;
-    if (toggle && window.innerWidth <= 768) {
-      toggle.style.display = 'block';
-    }
-  }
-};
-
-const toggleSidebar = () => {
-  const sidebar = document.getElementById('sidebar');
-  const toggle = document.querySelector('.mobile-menu-toggle');
-  if (sidebar) {
-    const isActive = sidebar.classList.contains('active');
-    if (isActive) {
-      closeSidebar();
-    } else {
-      sidebar.classList.add('active');
-      sidebarActive.value = true;
-      // Update burger visibility
-      if (toggle && process.client && window.innerWidth <= 768) {
-        toggle.style.display = 'none';
-      }
-    }
-  }
-};
-
 const navigateTo = (path) => {
-  // Close sidebar on mobile when navigating
-  if (process.client && window.innerWidth <= 768) {
-    closeSidebar();
-  }
   router.push(path);
 };
 
@@ -443,6 +474,17 @@ const getNavLinkStyle = (path) => {
   };
 };
 
+const getBottomNavItemStyle = (path) => {
+  const isActive = path === 'settings' ? false : isActiveLink(path);
+  return {
+    ...bottomNavItemStyle,
+    ...(isActive && { 
+      color: '#4e73df',
+      background: 'rgba(78, 115, 223, 0.1)'
+    })
+  };
+};
+
 const getSettingsDropdownStyle = () => {
   return {
     maxHeight: showSettings.value ? '200px' : '0',
@@ -452,47 +494,21 @@ const getSettingsDropdownStyle = () => {
 };
 
 // Styles
-const sidebarStyle = computed(() => {
-  const baseStyle = {
-    width: '250px',
-    background: 'linear-gradient(180deg, #4e73df 0%, #224abe 100%)',
-    color: '#fff',
-    padding: '24px 0',
-    boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
-    position: 'fixed',
-    height: '100vh',
-    left: 0,
-    top: 0,
-    overflowY: 'auto',
-    zIndex: 1000,
-    transition: 'transform 0.3s ease',
-    display: 'flex',
-    flexDirection: 'column'
-  };
-  
-  // On mobile, hide sidebar by default unless it's active
-  if (isMobile.value && !sidebarActive.value) {
-    return {
-      ...baseStyle,
-      transform: 'translateX(-100%)',
-      width: '0',
-      overflow: 'hidden',
-      pointerEvents: 'none'
-    };
-  }
-  
-  // On mobile when active, ensure full width
-  if (isMobile.value && sidebarActive.value) {
-    return {
-      ...baseStyle,
-      transform: 'translateX(0)',
-      width: '250px',
-      pointerEvents: 'auto'
-    };
-  }
-  
-  return baseStyle;
-});
+const sidebarStyle = computed(() => ({
+  width: '250px',
+  background: 'linear-gradient(180deg, #4e73df 0%, #224abe 100%)',
+  color: '#fff',
+  padding: '24px 0',
+  boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+  position: 'fixed',
+  height: '100vh',
+  left: 0,
+  top: 0,
+  overflowY: 'auto',
+  zIndex: 1000,
+  display: isMobile.value ? 'none' : 'flex',
+  flexDirection: 'column'
+}));
 
 const brandStyle = {
   fontSize: '24px',
@@ -598,34 +614,144 @@ const logoutBtnStyle = {
   transition: 'background 0.3s'
 };
 
-const mobileMenuToggleStyle = computed(() => {
-  const baseStyle = {
-    position: 'fixed',
-    top: '20px',
-    left: '20px',
-    zIndex: 1001,
-    color: 'black',
-    border: 'none',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-    background: 'white'
-  };
-  
-  if (isMobile.value) {
-    return {
-      ...baseStyle,
-      display: 'block'
-    };
-  }
-  
-  return {
-    ...baseStyle,
-    display: 'none'
-  };
-});
+// Bottom Navigation Styles
+const bottomNavStyle = computed(() => ({
+  display: isMobile.value ? 'flex' : 'none',
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  background: 'white',
+  borderTop: '1px solid #e3e6f0',
+  boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+  zIndex: 1000,
+  padding: '8px 0',
+  justifyContent: 'space-around',
+  alignItems: 'center'
+}));
+
+const bottomNavItemStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '8px 12px',
+  textDecoration: 'none',
+  color: '#858796',
+  cursor: 'pointer',
+  transition: 'all 0.3s',
+  flex: 1,
+  maxWidth: '80px',
+  background: 'transparent',
+  border: 'none',
+  fontFamily: 'inherit',
+  borderRadius: '8px'
+};
+
+const bottomNavIconStyle = {
+  width: '24px',
+  height: '24px',
+  marginBottom: '4px'
+};
+
+const bottomNavLabelStyle = {
+  fontSize: '11px',
+  fontWeight: '500'
+};
+
+const bottomNavBadgeStyle = {
+  position: 'absolute',
+  top: '-6px',
+  right: '-8px',
+  background: '#e74a3b',
+  color: 'white',
+  borderRadius: '10px',
+  padding: '2px 5px',
+  fontSize: '9px',
+  fontWeight: 'bold',
+  minWidth: '16px',
+  textAlign: 'center',
+  border: '2px solid white'
+};
+
+// Mobile Settings Modal Styles
+const mobileSettingsOverlayStyle = {
+  display: 'flex',
+  position: 'fixed',
+  zIndex: 2000,
+  left: 0,
+  top: 0,
+  width: '100%',
+  height: '100%',
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  animation: 'fadeIn 0.2s ease-out'
+};
+
+const mobileSettingsMenuStyle = {
+  backgroundColor: 'white',
+  borderRadius: '16px 16px 0 0',
+  width: '100%',
+  maxHeight: '50vh',
+  animation: 'slideUp 0.3s ease-out'
+};
+
+const mobileSettingsHeaderStyle = {
+  padding: '20px 24px',
+  borderBottom: '1px solid #e3e6f0',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center'
+};
+
+const mobileSettingsHeaderH3Style = {
+  margin: 0,
+  fontSize: '18px',
+  color: '#2e3a59',
+  fontWeight: '600'
+};
+
+const mobileSettingsCloseStyle = {
+  background: 'none',
+  border: 'none',
+  fontSize: '28px',
+  color: '#858796',
+  cursor: 'pointer',
+  padding: 0,
+  width: '32px',
+  height: '32px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
+
+const mobileSettingsContentStyle = {
+  padding: '12px 0'
+};
+
+const mobileSettingsLinkStyle = {
+  display: 'block',
+  padding: '16px 24px',
+  fontSize: '16px',
+  textDecoration: 'none',
+  color: '#2e3a59',
+  borderBottom: '1px solid #f0f0f0',
+  transition: 'background 0.3s'
+};
+
+const mobileSettingsLogoutStyle = {
+  background: 'none',
+  border: 'none',
+  color: '#e74a3b',
+  cursor: 'pointer',
+  padding: '16px 24px',
+  textAlign: 'left',
+  width: '100%',
+  fontSize: '16px',
+  fontWeight: '500',
+  transition: 'background 0.3s'
+};
 
 const modalStyle = {
   display: 'flex',

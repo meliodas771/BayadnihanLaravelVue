@@ -271,6 +271,22 @@
               </p>
             </div>
           </div>
+          
+          <!-- Typing Indicator -->
+          <div v-if="isTyping" :style="{
+            ...chatbotMessageUserStyle,
+            marginBottom: '10px',
+            animation: 'fadeIn 0.3s ease-out',
+            maxWidth: '85%',
+            alignSelf: 'flex-end',
+            padding: '0.75rem 1.25rem'
+          }" class="typing-indicator">
+            <div class="typing-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
         </div>
 
         <!-- Questions List (Buttons to click) -->
@@ -345,6 +361,7 @@ const uniqueChatbotQuestions = computed(() => {
 });
 
 const chatHistory = ref([]);
+const isTyping = ref(false);
 
 // Auto-scroll chat to latest message
 watch(chatHistory, async () => {
@@ -354,6 +371,15 @@ watch(chatHistory, async () => {
     el.scrollTop = el.scrollHeight;
   }
 }, { deep: true });
+
+// Auto-scroll when typing indicator appears
+watch(isTyping, async () => {
+  await nextTick();
+  const el = chatContainer.value;
+  if (el) {
+    el.scrollTop = el.scrollHeight;
+  }
+});
 
 const isLoggedIn = computed(() => isAuthenticated.value);
 
@@ -502,7 +528,7 @@ const closeChatbot = () => {
   showChatbot.value = false;
 };
 
-const askQuestion = (questionItem) => {
+const askQuestion = async (questionItem) => {
   const baseId = Date.now();
 
   // Question on the left (appears first/above)
@@ -511,6 +537,15 @@ const askQuestion = (questionItem) => {
     side: 'left',
     text: questionItem.question
   });
+
+  // Show typing indicator
+  isTyping.value = true;
+
+  // Simulate typing delay (2-3 seconds)
+  await new Promise(resolve => setTimeout(resolve, 2500));
+
+  // Hide typing indicator
+  isTyping.value = false;
 
   // Answer on the right (appears second/below)
   chatHistory.value.push({
@@ -785,16 +820,60 @@ const mobileHeaderActionsStyle = computed(() => ({ ...headerActionsStyle, flexDi
   to { opacity: 1; transform: translateY(0); }
 }
 
-
-
 @keyframes bounce {
   0%, 60%, 100% { transform: translateY(0); }
   30% { transform: translateY(-5px); }
 }
 
+@keyframes typingDot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
 .chat-message {
   margin-bottom: 10px;
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.typing-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+  animation: typingDot 1.4s infinite;
+}
+
+.typing-dots .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dots .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots .dot:nth-child(3) {
+  animation-delay: 0.4s;
 }
 
 /* Feature Cards Hover Animation */
