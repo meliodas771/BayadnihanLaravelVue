@@ -204,6 +204,23 @@ const errors = ref([]);
 const showModal = ref(false);
 const showAttachment = ref(true);
 const isLoading = ref(false);
+const isMobile = ref(false);
+
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth <= 768;
+  }
+};
+
+if (process.client) {
+  checkMobile();
+  onMounted(() => {
+    window.addEventListener('resize', checkMobile);
+  });
+  onUnmounted(() => {
+    window.removeEventListener('resize', checkMobile);
+  });
+}
 
 watch(() => formData.value.category, (newCategory) => {
   showAttachment.value = newCategory.toLowerCase() !== 'general';
@@ -367,13 +384,27 @@ const containerStyle = {
   padding: '0 16px'
 };
 
-const cardStyle = {
-  padding: '32px',
-  backgroundColor: '#ffffff',
-  width: '100%',
-  boxSizing: 'border-box',
-  minHeight: '600px'
-};
+const cardStyle = computed(() => {
+  if (isMobile.value) {
+    // No box on mobile - just padding and transparent background
+    return {
+      padding: '16px',
+      backgroundColor: 'transparent',
+      width: '100%',
+      boxSizing: 'border-box'
+    };
+  }
+  // Desktop - with box
+  return {
+    padding: '32px',
+    backgroundColor: '#ffffff',
+    width: '100%',
+    boxSizing: 'border-box',
+    minHeight: '600px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+  };
+});
 
 const pageTitleStyle = {
   color: '#2e3a59',

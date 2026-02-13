@@ -28,37 +28,46 @@
           <h1 class="task-title" :style="taskTitleStyle">{{ task.title }}</h1>
           
           <div class="task-meta" :style="taskMetaStyle">
-            <div class="meta-item" :style="metaItemStyle">
-              <span>📂</span>
-              <strong>{{ task.category || 'Uncategorized' }}</strong>
-            </div>
-            <div class="meta-item" :style="metaItemStyle">
-              <span>💰</span>
-              <strong>₱{{ formatPrice(task.price) }}</strong>
-            </div>
-            <div class="meta-item" :style="metaItemStyle">
-              <span>{{ task.payment_method === 'cash' ? '💵' : '💳' }}</span>
-              <strong>{{ capitalize(task.payment_method) }}</strong>
-            </div>
-            <div class="meta-item" :style="metaItemStyle">
+            <!-- Row 1: Status -->
+            <div class="meta-row" :style="metaRowStyle">
               <span :class="`status-badge status-${task.status}`" :style="statusBadgeStyle(task.status)">
                 {{ capitalize(task.status) }}
               </span>
             </div>
-            <div class="meta-item" :style="metaItemStyle" v-if="task.poster">
-              <span>👤</span>
-              <strong>
-                Posted by: 
-                <NuxtLink 
-                  v-if="task.poster && task.poster.id"
-                  :to="`/profile/${task.poster.id}?context=poster`"
-                  :style="posterLinkStyle"
-                >
-                  {{ displayPosterUsername }}
-                  <p :style="posterLinkHintStyle">(click to view profile)</p>
-                </NuxtLink>
-                <span v-else>Unknown User</span>
-              </strong>
+            
+            <!-- Row 2: Category, Price, Payment -->
+            <div class="meta-row" :style="metaRowStyle">
+              <div class="meta-item" :style="metaItemStyle">
+                <span>📂</span>
+                <strong>{{ task.category || 'Uncategorized' }}</strong>
+              </div>
+              <div class="meta-item" :style="metaItemStyle">
+                <span>💰</span>
+                <strong>₱{{ formatPrice(task.price) }}</strong>
+              </div>
+              <div class="meta-item" :style="metaItemStyle">
+                <span>{{ task.payment_method === 'cash' ? '💵' : '💳' }}</span>
+                <strong>{{ capitalize(task.payment_method) }}</strong>
+              </div>
+            </div>
+            
+            <!-- Row 3: Posted by -->
+            <div class="meta-row" :style="metaRowStyle" v-if="task.poster">
+              <div class="meta-item" :style="metaItemStyle">
+                <span>👤</span>
+                <strong>
+                  Posted by: 
+                  <NuxtLink 
+                    v-if="task.poster && task.poster.id"
+                    :to="`/profile/${task.poster.id}?context=poster`"
+                    :style="posterLinkStyle"
+                  >
+                    {{ displayPosterUsername }}
+                    <p :style="posterLinkHintStyle">(click to view profile)</p>
+                  </NuxtLink>
+                  <span v-else>Unknown User</span>
+                </strong>
+              </div>
             </div>
           </div>
           
@@ -1352,40 +1361,90 @@ const successStyle = {
   border: 'none'
 };
 
-const applySuccessStyle = {
-  background: 'rgba(28, 200, 138, 0.1)',
-  color: '#1cc88a',
-  padding: '10px 16px',
-  borderRadius: '8px',
-  marginBottom: '12px',
-  fontSize: '14px',
-  fontWeight: '500',
-  border: '1px solid rgba(28, 200, 138, 0.3)',
-  display: 'block',
-  textAlign: 'center'
-};
+const applySuccessStyle = computed(() => {
+  const base = {
+    background: 'rgba(28, 200, 138, 0.1)',
+    color: '#1cc88a',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    marginBottom: '12px',
+    fontSize: '14px',
+    fontWeight: '500',
+    border: '1px solid rgba(28, 200, 138, 0.3)',
+    display: 'block',
+    textAlign: 'center'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderRadius: '0',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
-const cardStyle = {
-  background: '#fff',
-  padding: '32px',
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-  border: 'none'
-};
+const cardStyle = computed(() => {
+  if (isMobile.value) {
+    // No box on mobile - just padding and transparent background
+    return {
+      background: 'transparent',
+      padding: '16px',
+      borderRadius: '0',
+      boxShadow: 'none',
+      border: 'none'
+    };
+  }
+  // Desktop - with box
+  return {
+    background: '#fff',
+    padding: '32px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    border: 'none'
+  };
+});
 
-const taskTitleStyle = {
-  color: '#2e3a59',
-  fontSize: '32px',
-  marginBottom: '20px'
-};
+const taskTitleStyle = computed(() => {
+  const base = {
+    color: '#2e3a59',
+    fontSize: isMobile.value ? '24px' : '32px',
+    marginBottom: isMobile.value ? '16px' : '20px'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      paddingBottom: '16px',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
-const taskMetaStyle = {
+const taskMetaStyle = computed(() => {
+  const base = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginBottom: '24px',
+    paddingBottom: '20px',
+    borderBottom: '2px solid #f8f9fc'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderBottom: '1px solid #e3e6f0',
+      gap: '10px'
+    };
+  }
+  return base;
+});
+
+const metaRowStyle = {
   display: 'flex',
-  gap: '20px',
-  flexWrap: 'wrap',
-  marginBottom: '24px',
-  paddingBottom: '20px',
-  borderBottom: '2px solid #f8f9fc'
+  alignItems: 'center',
+  gap: '16px',
+  flexWrap: 'wrap'
 };
 
 const metaItemStyle = {
@@ -1396,12 +1455,22 @@ const metaItemStyle = {
   fontSize: '14px'
 };
 
-const taskDescriptionStyle = {
-  color: '#5a5c69',
-  lineHeight: '1.8',
-  marginBottom: '10px',
-  fontSize: '15px'
-};
+const taskDescriptionStyle = computed(() => {
+  const base = {
+    color: '#5a5c69',
+    lineHeight: '1.8',
+    marginBottom: '10px',
+    fontSize: '15px'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      paddingBottom: '16px',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
 const buttonStyle = {
   display: 'inline-block',
@@ -1427,21 +1496,40 @@ const applicationStatusButtonStyle = {
   color: '#5a5c69'
 };
 
-const errorBoxStyle = {
-  background: '#f8d7da',
-  color: '#721c24',
-  padding: '12px 16px',
-  borderRadius: '8px',
-  marginBottom: '12px',
-  border: '1px solid #f5c6cb',
-  fontSize: '14px'
-};
+const errorBoxStyle = computed(() => {
+  const base = {
+    background: '#f8d7da',
+    color: '#721c24',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    marginBottom: '12px',
+    border: '1px solid #f5c6cb',
+    fontSize: '14px'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderRadius: '0',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
-const actionsStyle = {
-  marginTop: '24px',
-  paddingTop: '24px',
-  borderTop: '2px solid #f8f9fc'
-};
+const actionsStyle = computed(() => {
+  const base = {
+    marginTop: '24px',
+    paddingTop: '24px',
+    borderTop: '2px solid #f8f9fc'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderTop: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
 const posterLinkStyle = {
   color: '#4e73df',
@@ -1459,14 +1547,24 @@ const posterLinkHintStyle = {
 
 // Computed styles for merged objects
 
-const draftInfoBoxStyle = {
-  background: '#fff3cd',
-  color: '#856404',
-  padding: '16px',
-  borderRadius: '8px',
-  marginBottom: '20px',
-  borderLeft: '4px solid #f6c23e'
-};
+const draftInfoBoxStyle = computed(() => {
+  const base = {
+    background: '#fff3cd',
+    color: '#856404',
+    padding: '16px',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    borderLeft: '4px solid #f6c23e'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderRadius: '0',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
 const draftInfoBoxStrongStyle = {
   display: 'block',
@@ -1492,14 +1590,25 @@ const draftEditButtonStyle = {
   transition: 'transform 0.2s'
 };
 
-const posterInfoBoxStyle = {
-  background: '#e7f3ff',
-  color: '#004085',
-  padding: '16px',
-  borderRadius: '8px',
-  marginTop: '30px',
-  borderLeft: '4px solid #4e73df'
-};
+const posterInfoBoxStyle = computed(() => {
+  const base = {
+    background: '#e7f3ff',
+    color: '#004085',
+    padding: '16px',
+    borderRadius: '8px',
+    marginTop: '30px',
+    borderLeft: '4px solid #4e73df'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderRadius: '0',
+      marginTop: '16px',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
 const posterInfoBoxStrongStyle = {
   display: 'block',
@@ -1511,15 +1620,25 @@ const posterInfoBoxPStyle = {
   marginBottom: '0'
 };
 
-const doerInfoStyle = {
-  background: '#d4edda',
-  color: '#155724',
-  padding: '16px',
-  borderRadius: '8px',
-  marginTop: '16px',
-  marginBottom: '16px',
-  borderLeft: '4px solid #28a745'
-};
+const doerInfoStyle = computed(() => {
+  const base = {
+    background: '#d4edda',
+    color: '#155724',
+    padding: '16px',
+    borderRadius: '8px',
+    marginTop: '16px',
+    marginBottom: '16px',
+    borderLeft: '4px solid #28a745'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderRadius: '0',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return base;
+});
 
 const markCompleteButtonStyle = {
   ...buttonStyle,
@@ -1545,12 +1664,23 @@ const chatButtonStyle = {
   marginLeft: '8px'
 };
 
-const doerChatButtonStyle = {
-  ...buttonStyle,
-  position: 'relative',
-  marginTop: '12px',
-  display: 'block'
-};
+const doerChatButtonStyle = computed(() => {
+  const base = {
+    ...buttonStyle,
+    position: 'relative',
+    marginTop: '12px',
+    display: 'block'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderBottom: '1px solid #e3e6f0',
+      paddingBottom: '16px',
+      marginBottom: '0'
+    };
+  }
+  return base;
+});
 
 const messageBadgeStyle = {
   position: 'absolute',
@@ -1858,11 +1988,22 @@ const modalConfirmButtonStyle = {
   color: '#fff'
 };
 
-const applicationsSectionStyle = {
-  marginTop: '24px',
-  paddingTop: '24px',
-  borderTop: '2px solid #f8f9fc'
-};
+const applicationsSectionStyle = computed(() => {
+  const base = {
+    marginTop: '24px',
+    paddingTop: '24px',
+    borderTop: '2px solid #f8f9fc'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderTop: '1px solid #e3e6f0',
+      borderBottom: '1px solid #e3e6f0',
+      paddingBottom: '20px'
+    };
+  }
+  return base;
+});
 
 const applicationsTitleStyle = {
   color: '#2e3a59',
@@ -1922,30 +2063,41 @@ const feedbackSuccessStyle = {
   fontWeight: '500'
 };
 
-const feedbackSectionStyle = {
-  marginTop: '24px',
-  padding: '24px',
-  borderRadius: '12px',
-  borderLeft: '4px solid'
-};
+const feedbackSectionStyle = computed(() => {
+  const base = {
+    marginTop: '24px',
+    padding: '24px',
+    borderRadius: '12px',
+    borderLeft: '4px solid'
+  };
+  if (isMobile.value) {
+    return {
+      ...base,
+      borderRadius: '0',
+      borderBottom: '1px solid #e3e6f0',
+      padding: '16px'
+    };
+  }
+  return base;
+});
 
-const existingFeedbackStyle = {
-  ...feedbackSectionStyle,
+const existingFeedbackStyle = computed(() => ({
+  ...feedbackSectionStyle.value,
   background: '#e7f3ff',
   borderLeftColor: '#4e73df'
-};
+}));
 
-const posterFeedbackFormStyle = {
-  ...feedbackSectionStyle,
+const posterFeedbackFormStyle = computed(() => ({
+  ...feedbackSectionStyle.value,
   background: '#fff3cd',
   borderLeftColor: '#f6c23e'
-};
+}));
 
-const doerFeedbackFormStyle = {
-  ...feedbackSectionStyle,
+const doerFeedbackFormStyle = computed(() => ({
+  ...feedbackSectionStyle.value,
   background: '#d4edda',
   borderLeftColor: '#28a745'
-};
+}));
 
 const feedbackTitleStyle = {
   color: '#2e3a59',

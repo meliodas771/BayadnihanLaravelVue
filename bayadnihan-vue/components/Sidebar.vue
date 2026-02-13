@@ -457,7 +457,7 @@ const getProfilePicUrl = () => {
   }
   
   if (user.value.profile_pic) {
-    return `http://localhost:8000/storage/profile_pics/${user.value.profile_pic}`;
+    return `http://192.168.1.19:8000/storage/profile_pics/${user.value.profile_pic}`;
   }
   
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value.username || 'User')}&size=40&background=fff&color=4e73df`;

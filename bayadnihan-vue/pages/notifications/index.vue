@@ -269,11 +269,12 @@ const formatTime = (dateString) => {
 const itemStyle = (notification) => {
   const baseStyle = {
     padding: '16px',
-    borderBottom: '1px solid #f8f9fc',
+    borderBottom: '2px solid #e3e6f0',
     borderRadius: '8px',
-    marginBottom: '8px',
+    marginBottom: '12px',
     transition: 'background 0.2s',
-    position: 'relative'
+    position: 'relative',
+    background: '#fff'
   };
   if (!notification.read) {
     return { ...baseStyle, background: '#e7f3ff', borderLeft: '4px solid #4e73df' };
@@ -356,12 +357,24 @@ useHead({
 const isMobile = computed(() => windowWidth.value <= 768);
 
 const containerStyle = { maxWidth: '900px', margin: '24px auto', padding: '0 16px' };
-const cardStyle = computed(() => ({
-  background: '#fff',
-  padding: isMobile.value ? '20px' : '32px',
-  borderRadius: '12px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-}));
+const cardStyle = computed(() => {
+  if (isMobile.value) {
+    // No box on mobile - just padding and transparent background
+    return {
+      background: 'transparent',
+      padding: '16px',
+      borderRadius: '0',
+      boxShadow: 'none'
+    };
+  }
+  // Desktop - with box
+  return {
+    background: '#fff',
+    padding: '32px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+  };
+});
 
 const pageTitleStyle = computed(() => ({
   color: '#2e3a59',

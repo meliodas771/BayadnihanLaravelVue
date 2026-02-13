@@ -1,7 +1,7 @@
 <template>
   <div>
     <div style="max-width: 700px; margin: 0 auto; padding: 24px;">
-      <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <div :style="cardStyle">
         <h1 style="font-size: 28px; font-weight: 700; color: #2e3a59; margin-bottom: 8px;">
           Report User
         </h1>
@@ -217,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAPI } from '~/utils/api';
 import { useUser } from '~/composables/useUser';
@@ -243,6 +243,41 @@ const isLoading = ref(false);
 const interactedUsers = ref([]);
 const isLoadingInteractedUsers = ref(true);
 const showConfirmationModal = ref(false);
+const isMobile = ref(false);
+
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth <= 768;
+  }
+};
+
+const cardStyle = computed(() => {
+  if (isMobile.value) {
+    return {
+      background: 'transparent',
+      padding: '16px',
+      borderRadius: '0',
+      boxShadow: 'none'
+    };
+  }
+  return {
+    background: 'white',
+    padding: '32px',
+    borderRadius: '12px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+  };
+});
+
+if (process.client) {
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+}
+
+onUnmounted(() => {
+  if (process.client) {
+    window.removeEventListener('resize', checkMobile);
+  }
+});
 
 onMounted(async () => {
   // Check authentication first

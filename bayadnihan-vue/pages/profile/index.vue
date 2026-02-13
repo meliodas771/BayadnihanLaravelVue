@@ -1,6 +1,390 @@
 <template>
   <div>
-    <div :style="containerStyle">
+    <!-- Mobile View -->
+    <div v-if="isMobile" :style="mobileContainerStyle">
+      <!-- Mobile Profile Header (Always Visible) -->
+      <div :style="mobileHeaderStyle">
+        <div :style="mobileProfileSectionStyle">
+          <img 
+            :src="profilePicUrl" 
+            alt="Profile" 
+            :style="mobileProfilePicStyle"
+            @error="handleImageError"
+          />
+          <div :style="mobileProfileInfoStyle">
+            <h2 :style="mobileUsernameStyle">{{ user?.username || 'Loading...' }}</h2>
+            <p :style="mobileEmailStyle">{{ user?.email }}</p>
+            <div v-if="stats.avgRating" :style="mobileRatingStyle">
+              ⭐ {{ stats.avgRating }} / 5.0
+            </div>
+          </div>
+        </div>
+        
+        <!-- Edit Profile Link -->
+        <div :style="mobileEditLinkContainerStyle">
+          <span 
+            v-if="!isEditing"
+            @click="toggleEdit(true)" 
+            :style="mobileEditLinkStyle"
+          >
+            Edit Profile Picture
+          </span>
+          <span 
+            v-if="isEditing"
+            @click="toggleEdit(false)" 
+            :style="mobileEditLinkStyle"
+          >
+            Cancel
+          </span>
+        </div>
+        
+        <!-- Edit Form (when editing) -->
+        <form v-if="isEditing" @submit.prevent="handleProfileUpdate" :style="mobileEditFormStyle">
+          <div :style="mobileFormGroupStyle">
+            <label :style="mobileLabelStyle">Profile Picture</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              @change="handleFileChange"
+              :style="mobileFileInputStyle"
+            />
+          </div>
+          <button type="submit" :style="mobileSaveButtonStyle">Save Changes</button>
+        </form>
+      </div>
+
+      <!-- Trial Status Banner (Mobile - Only for 'both' role on trial) -->
+      <div v-if="user && user.role === 'both' && isOnTrial" :style="mobileTrialBannerStyle">
+        <div :style="mobileTrialContentStyle">
+          <div :style="mobileTrialIconStyle">⏰</div>
+          <div :style="mobileTrialInfoStyle">
+            <h3 :style="mobileTrialTitleStyle">Free Trial Active!</h3>
+            <p :style="mobileTrialTextStyle">
+              <strong>{{ trialDaysRemaining }} {{ trialDaysRemaining === 1 ? 'day' : 'days' }}</strong> remaining
+            </p>
+            <p :style="mobileTrialWarningStyle">
+              ⚠️ After trial: role changes to <strong>Poster</strong>
+            </p>
+          </div>
+        </div>
+        <button @click="showSubscriptionModalFunc" :style="mobileTrialButtonStyle">
+          Continue as Both - ₱99/month
+        </button>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div :style="mobileTabsContainerStyle">
+        <div 
+          @click="mobileActiveTab = 'statistics'" 
+          :style="getMobileTabStyle('statistics')"
+        >
+          Statistics
+        </div>
+        <div 
+          @click="mobileActiveTab = 'wallet'" 
+          :style="getMobileTabStyle('wallet')"
+        >
+          Wallet
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div :style="mobileContentStyle">
+        <!-- Statistics View -->
+        <div v-if="mobileActiveTab === 'statistics'" :style="mobileFullScreenContentStyle">
+          <h3 :style="mobileSectionTitleStyle">📊 Your Statistics</h3>
+          
+          <!-- Stats Grid based on Role -->
+          <div :style="mobileStatsGridStyle">
+            <template v-if="user && user.role === 'both'">
+              <div :style="mobileStatItemGreenStyle">
+                <div :style="mobileStatValueStyle">₱{{ formatPrice(stats.totalEarnings) }}</div>
+                <div :style="mobileStatLabelStyle">Total Earnings</div>
+              </div>
+              <div :style="mobileStatItemRedStyle">
+                <div :style="mobileStatValueStyle">₱{{ formatPrice(stats.totalSpend) }}</div>
+                <div :style="mobileStatLabelStyle">Total Spend</div>
+              </div>
+              <div :style="mobileStatItemBlueStyle">
+                <div :style="mobileStatValueStyle">{{ stats.completedTasksCount }}</div>
+                <div :style="mobileStatLabelStyle">Tasks Completed</div>
+              </div>
+              <div :style="mobileStatItemGradientStyle">
+                <div :style="mobileStatValueStyle">{{ totalPostedTasks }}</div>
+                <div :style="mobileStatLabelStyle">Tasks Posted</div>
+              </div>
+              <div :style="mobileStatItemGreyStyle">
+                <div :style="mobileStatValueStyle">{{ stats.cancelledTasksCount || 0 }}</div>
+                <div :style="mobileStatLabelStyle">Cancelled Tasks</div>
+              </div>
+              <div :style="mobileStatItemOrangeStyle">
+                <div :style="mobileStatValueStyle">{{ activeTasksCount }}</div>
+                <div :style="mobileStatLabelStyle">Active Tasks</div>
+              </div>
+            </template>
+            <template v-else-if="user && user.role === 'doer'">
+              <div :style="mobileStatItemGreenStyle">
+                <div :style="mobileStatValueStyle">₱{{ formatPrice(stats.totalEarnings) }}</div>
+                <div :style="mobileStatLabelStyle">Total Earnings</div>
+              </div>
+              <div :style="mobileStatItemBlueStyle">
+                <div :style="mobileStatValueStyle">{{ stats.completedTasksCount }}</div>
+                <div :style="mobileStatLabelStyle">Tasks Completed</div>
+              </div>
+              <div :style="mobileStatItemOrangeStyle">
+                <div :style="mobileStatValueStyle">{{ activeTasksCount }}</div>
+                <div :style="mobileStatLabelStyle">Active Tasks</div>
+              </div>
+            </template>
+            <template v-else-if="user && user.role === 'poster'">
+              <div :style="mobileStatItemRedStyle">
+                <div :style="mobileStatValueStyle">₱{{ formatPrice(stats.totalSpend) }}</div>
+                <div :style="mobileStatLabelStyle">Total Spend</div>
+              </div>
+              <div :style="mobileStatItemOrangeStyle">
+                <div :style="mobileStatValueStyle">{{ totalPostedTasks }}</div>
+                <div :style="mobileStatLabelStyle">Tasks Posted</div>
+              </div>
+              <div :style="mobileStatItemBlueStyle">
+                <div :style="mobileStatValueStyle">{{ stats.postedTasks?.completed || 0 }}</div>
+                <div :style="mobileStatLabelStyle">Completed Tasks</div>
+              </div>
+              <div :style="mobileStatItemGreyStyle">
+                <div :style="mobileStatValueStyle">{{ stats.cancelledTasksCount || 0 }}</div>
+                <div :style="mobileStatLabelStyle">Cancelled Tasks</div>
+              </div>
+            </template>
+          </div>
+
+
+          <!-- Tasks Posted Section (if not doer) -->
+          <template v-if="user && user.role !== 'doer'">
+            <div :style="mobileTaskSectionStyle">
+              <h4 :style="mobileTaskSectionTitleStyle">📝 Tasks You Posted</h4>
+              <div :style="mobileTaskStatsStyle">
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.postedTasks?.open || 0 }}</strong>
+                  <span>Open</span>
+                </div>
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.postedTasks?.assigned || 0 }}</strong>
+                  <span>Assigned</span>
+                </div>
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.postedTasks?.in_progress || 0 }}</strong>
+                  <span>In Progress</span>
+                </div>
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.postedTasks?.completed || 0 }}</strong>
+                  <span>Completed</span>
+                </div>
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.cancelledTasksCount || 0 }}</strong>
+                  <span>Cancelled</span>
+                </div>
+              </div>
+              
+              <!-- Task Cards List -->
+              <div :style="mobileTaskListStyle">
+                <template v-if="displayedPostedTasks.length > 0">
+                  <NuxtLink 
+                    v-for="task in displayedPostedTasks" 
+                    :key="task.id"
+                    :to="`/tasks/${task.id}`"
+                    :style="mobileTaskCardLinkStyle"
+                  >
+                    <div :style="getMobileTaskCardStyle(task.status)">
+                      <div :style="mobileTaskCardHeaderStyle">
+                        <div :style="mobileTaskTitleStyle">{{ task.title }}</div>
+                        <div :style="mobileTaskPriceStyle">₱{{ formatPrice(task.price) }}</div>
+                      </div>
+                      <div :style="mobileTaskMetaStyle">
+                        Status: <span :style="getStatusColorStyle(task.status)">{{ capitalize(task.status.replace('_', ' ')) }}</span>
+                        <span v-if="task.doer_username">
+                          · Assigned to: <strong>{{ task.doer_username }}</strong>
+                        </span>
+                      </div>
+                      <div v-if="['assigned', 'in_progress'].includes(task.status)" :style="mobileCompletionBarWrapperStyle">
+                        <div :style="mobileCompletionBarContainerStyle">
+                          <div :style="getMobileCompletionBarStyle(task.completion_percentage || 0)"></div>
+                        </div>
+                        <span :style="mobileCompletionPercentageStyle">{{ task.completion_percentage || 0 }}%</span>
+                      </div>
+                      <div v-if="['assigned', 'in_progress'].includes(task.status)" :style="mobileClickToManageStyle">
+                        👉 Click to manage
+                      </div>
+                    </div>
+                  </NuxtLink>
+                </template>
+                <p v-else :style="mobileNoTasksStyle">No tasks posted yet</p>
+                <NuxtLink 
+                  v-if="postedTasksList.length > 5"
+                  to="/my-tasks"
+                  :style="mobileViewAllLinkStyle"
+                >
+                  View all {{ postedTasksList.length }} tasks →
+                </NuxtLink>
+              </div>
+            </div>
+          </template>
+
+          <!-- Tasks Done Section (if not poster) -->
+          <template v-if="user && user.role !== 'poster'">
+            <div :style="mobileTaskSectionStyle">
+              <h4 :style="mobileTaskSectionTitleStyle">✅ Tasks You Did</h4>
+              <div :style="mobileTaskStatsDoneStyle">
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.doneTasks?.assigned || 0 }}</strong>
+                  <span>Assigned</span>
+                </div>
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.doneTasks?.in_progress || 0 }}</strong>
+                  <span>In Progress</span>
+                </div>
+                <div :style="mobileTaskStatItemStyle">
+                  <strong>{{ stats.doneTasks?.completed || 0 }}</strong>
+                  <span>Completed</span>
+                </div>
+              </div>
+              
+              <!-- Task Cards List -->
+              <div :style="mobileTaskListStyle">
+                <template v-if="displayedDoneTasks.length > 0">
+                  <div 
+                    v-for="task in displayedDoneTasks" 
+                    :key="task.id"
+                    :style="getMobileTaskCardDoneStyle(task.status)"
+                  >
+                    <div :style="mobileTaskCardHeaderStyle">
+                      <NuxtLink :to="`/tasks/${task.id}`" :style="mobileTaskTitleLinkStyle">
+                        <div :style="mobileTaskTitleStyle">{{ task.title }}</div>
+                      </NuxtLink>
+                      <div :style="mobileTaskPriceStyle">₱{{ formatPrice(task.price) }}</div>
+                    </div>
+                    <div :style="mobileTaskMetaStyle">
+                      Status: <span :style="getDoneTaskStatusColorStyle(task.status)">{{ capitalize(task.status.replace('_', ' ')) }}</span>
+                      · Posted by: <strong>{{ task.poster_username }}</strong>
+                    </div>
+                    <div v-if="task.status === 'assigned'" :style="mobileTaskActionButtonsStyle">
+                      <button 
+                        @click.prevent="handleStartTask(task.id)"
+                        :style="mobileStartTaskButtonStyle"
+                      >
+                        I'm doing the task right now
+                      </button>
+                    </div>
+                    <div v-else-if="task.status === 'in_progress'" :style="mobileTaskActionButtonsStyle">
+                      <button 
+                        @click.prevent="openPauseModal(task.id)"
+                        :style="mobilePauseTaskButtonStyle"
+                      >
+                        ⏸️ Pause
+                      </button>
+                      <button 
+                        @click.prevent="openCompletionModal(task.id, task.completion_percentage || 0)"
+                        :style="mobileUpdateCompletionButtonStyle"
+                      >
+                        📊 Update
+                      </button>
+                    </div>
+                    <div v-if="task.status === 'assigned'" :style="mobileTaskActionButtonsStyle">
+                      <button 
+                        @click.prevent="openCompletionModal(task.id, task.completion_percentage || 0)"
+                        :style="mobileUpdateCompletionButtonStyle"
+                      >
+                        📊 Update Completion
+                      </button>
+                    </div>
+                  </div>
+                </template>
+                <p v-else :style="mobileNoTasksStyle">No tasks done yet</p>
+                <NuxtLink 
+                  v-if="doneTasksList.length > 5"
+                  to="/my-tasks"
+                  :style="mobileViewAllLinkStyle"
+                >
+                  View all {{ doneTasksList.length }} tasks →
+                </NuxtLink>
+              </div>
+            </div>
+          </template>
+
+          <!-- Feedback Section (as Doer) -->
+          <div v-if="feedbacks.length > 0" :style="mobileFeedbackSectionStyle">
+            <h4 :style="mobileTaskSectionTitleStyle">💬 Feedback from Posters (as Doer)</h4>
+            <div v-for="feedback in feedbacks" :key="feedback.id" :style="mobileFeedbackCardDoerStyle">
+              <div :style="mobileFeedbackContentStyle">
+                <img 
+                  :src="getFeedbackProfilePic(feedback.from_profile_pic, feedback.from_username, '4e73df')"
+                  :alt="feedback.from_username"
+                  :style="mobileFeedbackProfilePicStyle"
+                />
+                <div :style="mobileFeedbackInfoStyle">
+                  <div :style="mobileFeedbackHeaderStyle">
+                    <strong :style="mobileFeedbackUsernameStyle">{{ maskFeedbackUsername(feedback.from_username) }}</strong>
+                    <div :style="mobileFeedbackRatingStyle">
+                      {{ '⭐'.repeat(feedback.rating) }}
+                    </div>
+                  </div>
+                  <div :style="mobileFeedbackTaskStyle">
+                    Task: <strong :style="mobileFeedbackTaskStrongStyle">{{ feedback.task_title }}</strong>
+                  </div>
+                </div>
+              </div>
+              <div v-if="feedback.reviews" :style="mobileFeedbackReviewStyle">
+                "{{ feedback.reviews }}"
+              </div>
+              <div :style="mobileFeedbackDateStyle">
+                {{ formatRelativeTime(feedback.created_at) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Feedback Section (as Poster) -->
+          <div v-if="feedbacksAsPoster.length > 0" :style="mobileFeedbackSectionStyle">
+            <h4 :style="mobileTaskSectionTitleStyle">⭐ Feedback from Doers (as Poster)</h4>
+            <div v-for="feedback in feedbacksAsPoster" :key="feedback.id" :style="mobileFeedbackCardPosterStyle">
+              <div :style="mobileFeedbackContentStyle">
+                <img 
+                  :src="getFeedbackProfilePic(feedback.from_profile_pic, feedback.from_username, '1cc88a')"
+                  :alt="feedback.from_username"
+                  :style="mobileFeedbackProfilePicStyle"
+                />
+                <div :style="mobileFeedbackInfoStyle">
+                  <div :style="mobileFeedbackHeaderStyle">
+                    <strong :style="mobileFeedbackUsernameStyle">{{ maskFeedbackUsername(feedback.from_username) }}</strong>
+                    <div :style="mobileFeedbackRatingStyle">
+                      {{ '⭐'.repeat(feedback.rating) }}
+                    </div>
+                  </div>
+                  <div :style="mobileFeedbackTaskStyle">
+                    Task: <strong :style="mobileFeedbackTaskStrongStyle">{{ feedback.task_title }}</strong>
+                  </div>
+                </div>
+              </div>
+              <div v-if="feedback.reviews" :style="mobileFeedbackReviewStyle">
+                "{{ feedback.reviews }}"
+              </div>
+              <div :style="mobileFeedbackDateStyle">
+                {{ formatRelativeTime(feedback.created_at) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wallet View -->
+        <div v-if="mobileActiveTab === 'wallet'" :style="mobileFullScreenContentStyle">
+          <h3 :style="mobileSectionTitleStyle">💰 Wallet</h3>
+          <div :style="mobileWalletComingSoonStyle">
+            <p :style="mobileComingSoonTextStyle">Coming Soon!</p>
+            <p :style="mobileComingSoonSubtextStyle">Wallet feature is under development</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop View -->
+    <div v-else :style="containerStyle">
         <!-- Trial Status Banner (Only for 'both' role on trial) -->
         <div v-if="user && user.role === 'both' && isOnTrial" class="trial-banner" :style="trialBannerStyle">
           <div class="trial-banner-content" :style="trialBannerContentStyle">
@@ -172,6 +556,12 @@
                 <button type="button" class="btn" @click="toggleEdit(false)" :style="cancelButtonStyle">❌ Cancel</button>
               </div>
             </form>
+          </div>
+
+          <!-- Wallet Box (Desktop) -->
+          <div class="card wallet-card" :style="walletCardStyle">
+            <h3 :style="walletTitleStyle">💰 Wallet</h3>
+            <p :style="walletComingSoonStyle">Coming soon</p>
           </div>
         </div>
 
@@ -439,7 +829,7 @@
                   <div 
                     v-for="task in displayedDoneTasks" 
                     :key="task.id"
-                    :style="taskCardDoneStyle"
+                    :style="getTaskCardDoneStyle(task.status)"
                   >
                     <div :style="taskCardContentStyle">
                       <div :style="taskCardLeftStyle">
@@ -581,8 +971,7 @@
           </div>
         </div>
       </div>
-    </div>
-
+    
     <!-- Subscription Modal -->
     <div 
       class="subscription-modal" 
@@ -714,6 +1103,7 @@
           </div>
         </form>
       </div>
+    </div>
   </div>
 </template>
 
@@ -784,6 +1174,12 @@ const totalPostedTasks = computed(() => {
          (stats.value.postedTasks.completed || 0);
 });
 
+const recentFeedback = computed(() => {
+  // Combine both feedback arrays and sort by date
+  const allFeedback = [...(feedbacks.value || []), ...(feedbacksAsPoster.value || [])];
+  return allFeedback.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+});
+
 const activeTasksCount = computed(() => {
   return (stats.value.doneTasks?.assigned || 0) + (stats.value.doneTasks?.in_progress || 0);
 });
@@ -803,7 +1199,7 @@ const profilePicUrl = computed(() => {
   if (user.value?.profile_pic) {
     // Add cache-busting parameter to force browser to reload the image
     // Use cache key that updates when profile is refreshed
-    return `http://localhost:8000/api/storage/profile_pics/${user.value.profile_pic}?t=${profilePicCacheKey.value}`;
+    return `http://127.0.0.1:8000/api/storage/profile_pics/${user.value.profile_pic}?t=${profilePicCacheKey.value}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value?.username || 'User')}&size=150&background=4e73df&color=fff`;
 });
@@ -920,6 +1316,9 @@ const handleFileChange = (e) => {
     reader.readAsDataURL(file);
   }
 };
+
+// Alias for mobile
+const handleFileSelect = handleFileChange;
 
 const handleProfileUpdate = async () => {
   try {
@@ -1141,6 +1540,19 @@ const toggleEdit = (show) => {
   }
 };
 
+// Mobile helper functions
+const cancelEdit = () => {
+  toggleEdit(false);
+};
+
+const handleSaveProfile = async () => {
+  await handleProfileUpdate();
+};
+
+const getProfilePicUrl = () => {
+  return profilePicUrl.value;
+};
+
 const formatPrice = (price) => {
   if (!price) return '0.00';
   const numPrice = typeof price === 'number' ? price : parseFloat(price || 0);
@@ -1230,7 +1642,7 @@ const maskFeedbackUsername = (username) => {
 
 const getFeedbackProfilePic = (profilePic, username, bgColor) => {
   if (profilePic) {
-    return `http://localhost:8000/storage/profile_pics/${profilePic}`;
+    return `http://127.0.0.1:8000/storage/profile_pics/${profilePic}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(username || 'User')}&size=40&background=${bgColor}&color=fff`;
 };
@@ -1351,8 +1763,18 @@ useHead({
 // Use a ref to track window width for reactive updates
 const windowWidth = ref(1920); // Default to desktop width
 const isMounted = ref(false);
+const isMobile = ref(false);
+const showWalletModal = ref(false);
+const mobileActiveTab = ref('statistics'); // 'statistics' or 'wallet'
+
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth <= 768;
+  }
+};
 
 if (process.client) {
+  checkMobile();
   onMounted(() => {
     isMounted.value = true;
     // Update to actual window width after mount
@@ -1360,6 +1782,7 @@ if (process.client) {
     
     const updateWidth = () => {
       windowWidth.value = window.innerWidth;
+      checkMobile();
     };
     window.addEventListener('resize', updateWidth);
     onUnmounted(() => {
@@ -1409,6 +1832,29 @@ const profileCardStyle = {
   padding: '24px',
   background: '#fff'
 };
+
+const walletCardStyle = {
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+  borderRadius: '12px',
+  padding: '24px',
+  background: '#fff',
+  marginTop: '24px',
+  textAlign: 'center'
+};
+
+const walletTitleStyle = {
+  color: '#2e3a59',
+  fontSize: '20px',
+  fontWeight: '600',
+  marginBottom: '12px'
+};
+
+const walletComingSoonStyle = {
+  color: '#858796',
+  fontSize: '14px',
+  margin: 0
+};
+
 const statsCardStyle = { 
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
   borderRadius: '12px',
@@ -1465,7 +1911,23 @@ const taskStatStrongCancelledStyle = { ...taskStatStrongStyle, color: '#e74a3b' 
 const taskStatSpanStyle = { color: '#858796', fontSize: '13px' };
 const taskListWrapperStyle = { marginTop: '16px' };
 const taskCardLinkStyle = { textDecoration: 'none', display: 'block' };
-const taskCardDoneStyle = { background: '#fff', padding: '12px', borderRadius: '8px', marginBottom: '8px', borderLeft: '3px solid #1cc88a', transition: 'transform 0.2s, box-shadow 0.2s' };
+const getTaskCardDoneStyle = (status) => {
+  const borderColors = {
+    open: '#4e73df',        // Blue for open tasks
+    assigned: '#ff9800',    // Orange for assigned tasks
+    in_progress: '#ff9800', // Orange for in_progress tasks
+    completed: '#1cc88a',   // Green for completed tasks
+    cancelled: '#ae0925ff'  // Red for cancelled tasks
+  };
+  return {
+    background: '#fff',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '8px',
+    borderLeft: `3px solid ${borderColors[status] || '#1cc88a'}`,
+    transition: 'transform 0.2s, box-shadow 0.2s'
+  };
+};
 const taskCardContentStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'start' };
 const taskCardLeftStyle = { flex: 1 };
 const taskCardTitleStyle = { color: '#2e3a59', fontWeight: '600', fontSize: '15px' };
@@ -1579,4 +2041,651 @@ const completionValueStyle = { color: '#2e3a59', fontWeight: '600' };
 const completionPreviewWrapperStyle = { marginTop: '16px', background: '#f8f9fc', padding: '12px', borderRadius: '8px' };
 const completionPreviewContainerStyle = { flex: 1, background: '#e3e6f0', borderRadius: '10px', height: '24px', overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' };
 const completionPreviewTextStyle = { color: '#1cc88a', fontWeight: '600', fontSize: '14px', minWidth: '45px' };
+
+// Mobile Styles
+const mobileContainerStyle = {
+  minHeight: '100vh',
+  background: '#f8f9fc',
+  paddingBottom: '80px',
+  margin: '0',
+  width: '100%'
+};
+
+const mobileHeaderStyle = {
+  background: 'linear-gradient(180deg, #4e73df 0%, #224abe 100%)',
+  padding: '0 0 40px 0',
+  paddingTop: '20px',
+  color: 'white',
+  borderBottomLeftRadius: '30px',
+  borderBottomRightRadius: '30px',
+  boxShadow: '0 4px 12px rgba(78, 115, 223, 0.3)',
+  margin: '0',
+  width: '100%',
+  boxSizing: 'border-box'
+};
+
+const mobileProfileSectionStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  marginBottom: '12px',
+  padding: '0 16px'
+};
+
+const mobileProfilePicStyle = {
+  width: '80px',
+  height: '80px',
+  borderRadius: '50%',
+  border: '3px solid white',
+  objectFit: 'cover'
+};
+
+const mobileProfileInfoStyle = {
+  flex: 1
+};
+
+const mobileUsernameStyle = {
+  margin: 0,
+  fontSize: '20px',
+  fontWeight: '600',
+  color: 'white'
+};
+
+const mobileEmailStyle = {
+  margin: '4px 0',
+  fontSize: '14px',
+  color: 'rgba(255, 255, 255, 0.9)'
+};
+
+const mobileRatingStyle = {
+  marginTop: '8px',
+  fontSize: '14px',
+  color: 'white',
+  fontWeight: '600'
+};
+
+const mobileContentStyle = {
+  padding: '0',
+  minHeight: 'calc(100vh - 300px)'
+};
+
+const mobileEditFormStyle = {
+  marginTop: '12px',
+  margin: '12px 16px 0 16px',
+  padding: '12px',
+  background: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: '8px'
+};
+
+const mobileFormGroupStyle = {
+  marginBottom: '12px'
+};
+
+const mobileLabelStyle = {
+  display: 'block',
+  marginBottom: '6px',
+  color: 'white',
+  fontSize: '13px',
+  fontWeight: '600'
+};
+
+const mobileSectionTitleStyle = {
+  margin: '0 0 20px 0',
+  fontSize: '20px',
+  fontWeight: '700',
+  color: '#2e3a59'
+};
+
+const mobileStatsGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: '12px',
+  marginBottom: '24px'
+};
+
+const mobileStatItemStyle = {
+  background: 'white',
+  padding: '20px 16px',
+  borderRadius: '12px',
+  textAlign: 'center',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+  border: '2px solid #f8f9fc'
+};
+
+const mobileStatValueStyle = {
+  fontSize: '22px',
+  fontWeight: '700',
+  color: 'white',
+  marginBottom: '6px'
+};
+
+const mobileStatLabelStyle = {
+  fontSize: '12px',
+  color: 'rgba(255, 255, 255, 0.9)',
+  fontWeight: '500'
+};
+
+const mobileEditLinkContainerStyle = {
+  textAlign: 'center',
+  marginTop: '12px',
+  marginBottom: '8px'
+};
+
+const mobileEditLinkStyle = {
+  color: 'white',
+  fontWeight: '500',
+  fontSize: '14px',
+  cursor: 'pointer',
+  textDecoration: 'underline',
+  padding: '0',
+  background: 'none',
+  border: 'none'
+};
+
+const mobileFileInputStyle = {
+  width: '100%',
+  padding: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  borderRadius: '6px',
+  fontSize: '13px',
+  boxSizing: 'border-box',
+  background: 'rgba(255, 255, 255, 0.9)',
+  color: '#2e3a59'
+};
+
+const mobileSaveButtonStyle = {
+  width: '100%',
+  padding: '10px',
+  background: 'white',
+  color: '#4e73df',
+  border: 'none',
+  borderRadius: '6px',
+  fontSize: '14px',
+  fontWeight: '600',
+  cursor: 'pointer'
+};
+
+const mobileTabsContainerStyle = {
+  display: 'flex',
+  background: 'white',
+  borderBottom: '2px solid #e3e6f0'
+};
+
+const getMobileTabStyle = (tab) => {
+  const isActive = mobileActiveTab.value === tab;
+  return {
+    flex: 1,
+    padding: '16px',
+    textAlign: 'center',
+    fontSize: '15px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    color: isActive ? '#4e73df' : '#858796',
+    borderBottom: isActive ? '3px solid #4e73df' : '3px solid transparent',
+    transition: 'all 0.3s',
+    background: isActive ? '#f8f9fc' : 'white'
+  };
+};
+
+const mobileFullScreenContentStyle = {
+  padding: '20px 16px',
+  background: '#f8f9fc'
+};
+
+const mobileStatItemGreenStyle = {
+  ...mobileStatItemStyle,
+  background: 'linear-gradient(135deg, #1cc88a 0%, #13855c 100%)',
+  border: 'none'
+};
+
+const mobileStatItemRedStyle = {
+  ...mobileStatItemStyle,
+  background: 'linear-gradient(135deg, #e74a3b 0%, #be2617 100%)',
+  border: 'none'
+};
+
+const mobileStatItemOrangeStyle = {
+  ...mobileStatItemStyle,
+  background: 'linear-gradient(135deg, #f6c23e 0%, #dda20a 100%)',
+  border: 'none'
+};
+
+const mobileStatItemGreyStyle = {
+  ...mobileStatItemStyle,
+  background: 'linear-gradient(135deg, #858796 0%, #60616f 100%)',
+  border: 'none'
+};
+
+const mobileStatItemGradientStyle = {
+  ...mobileStatItemStyle,
+  background: 'linear-gradient(135deg, rgb(146, 21, 21) 0%, rgb(55, 55, 99) 100%)',
+  border: 'none'
+};
+
+const mobileStatItemBlueStyle = {
+  ...mobileStatItemStyle,
+  background: 'linear-gradient(135deg, #4e73df 0%, #224abe 100%)',
+  border: 'none'
+};
+
+
+const mobileRatingBoxStyle = {
+  background: 'white',
+  padding: '20px',
+  borderRadius: '12px',
+  textAlign: 'center',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+  marginBottom: '24px'
+};
+
+const mobileRatingValueStyle = {
+  fontSize: '24px',
+  fontWeight: '700',
+  color: '#f6c23e',
+  marginBottom: '8px'
+};
+
+const mobileRatingLabelStyle = {
+  fontSize: '14px',
+  color: '#858796'
+};
+
+const mobileTaskSectionStyle = {
+  marginBottom: '24px'
+};
+
+const mobileTaskSectionTitleStyle = {
+  fontSize: '18px',
+  fontWeight: '600',
+  color: '#2e3a59',
+  marginBottom: '12px'
+};
+
+const mobileTaskStatsStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(5, 1fr)',
+  gap: '8px',
+  background: 'white',
+  padding: '16px',
+  borderRadius: '12px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+  marginBottom: '16px'
+};
+
+const mobileTaskStatsDoneStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '12px',
+  background: 'white',
+  padding: '16px',
+  borderRadius: '12px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+  marginBottom: '16px'
+};
+
+const mobileTaskStatItemStyle = {
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
+  fontSize: '11px',
+  color: '#858796'
+};
+
+const mobileTaskListStyle = {
+  marginTop: '12px'
+};
+
+const mobileTaskCardLinkStyle = {
+  textDecoration: 'none',
+  display: 'block',
+  marginBottom: '12px'
+};
+
+const getMobileTaskCardStyle = (status) => {
+  let borderColor = '#e3e6f0';
+  let backgroundColor = 'white';
+  
+  if (status === 'open') {
+    borderColor = '#4e73df'; // Blue for open tasks
+  }
+  else if (status === 'assigned') borderColor = '#f6c23e';
+  else if (status === 'in_progress') borderColor = '#1cc88a';
+  else if (status === 'completed') {
+    borderColor = '#1cc88a'; // Green for completed tasks
+    backgroundColor = '#d4edda'; // Light green background
+  }
+  else if (status === 'cancelled') borderColor = '#e74a3b';
+  
+  return {
+    background: backgroundColor,
+    borderRadius: '12px',
+    padding: '16px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+    borderLeft: `4px solid ${borderColor}`,
+    transition: 'transform 0.2s'
+  };
+};
+
+const getMobileTaskCardDoneStyle = (status) => {
+  let backgroundColor = 'white';
+  let borderColor = '#1cc88a';
+  
+  if (status === 'open') {
+    borderColor = '#4e73df'; // Blue for open tasks
+  } else if (status === 'completed') {
+    backgroundColor = '#d4edda'; // Light green background
+    borderColor = '#1cc88a'; // Green for completed tasks
+  } else if (status === 'in_progress') {
+    borderColor = '#1cc88a';
+  } else if (status === 'assigned') {
+    borderColor = '#f6c23e';
+  }
+  
+  return {
+    background: backgroundColor,
+    borderRadius: '12px',
+    padding: '16px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+    borderLeft: `4px solid ${borderColor}`,
+    marginBottom: '12px'
+  };
+};
+
+const mobileTaskCardHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'start',
+  marginBottom: '8px',
+  gap: '12px'
+};
+
+const mobileTaskTitleStyle = {
+  fontSize: '15px',
+  fontWeight: '600',
+  color: '#2e3a59',
+  flex: 1,
+  lineHeight: '1.4'
+};
+
+const mobileTaskTitleLinkStyle = {
+  textDecoration: 'none'
+};
+
+const mobileTaskPriceStyle = {
+  fontSize: '16px',
+  fontWeight: '700',
+  color: '#1cc88a',
+  whiteSpace: 'nowrap'
+};
+
+const mobileTaskMetaStyle = {
+  fontSize: '13px',
+  color: '#858796',
+  marginBottom: '8px',
+  lineHeight: '1.5'
+};
+
+const mobileCompletionBarWrapperStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  marginTop: '12px',
+  marginBottom: '8px'
+};
+
+const mobileCompletionBarContainerStyle = {
+  flex: 1,
+  height: '8px',
+  background: '#e3e6f0',
+  borderRadius: '4px',
+  overflow: 'hidden'
+};
+
+const getMobileCompletionBarStyle = (percentage) => ({
+  height: '100%',
+  width: `${percentage}%`,
+  background: 'linear-gradient(90deg, #1cc88a 0%, #13855c 100%)',
+  transition: 'width 0.3s'
+});
+
+const mobileCompletionPercentageStyle = {
+  fontSize: '13px',
+  fontWeight: '600',
+  color: '#1cc88a',
+  minWidth: '40px'
+};
+
+const mobileClickToManageStyle = {
+  fontSize: '12px',
+  color: '#4e73df',
+  fontStyle: 'italic',
+  marginTop: '4px'
+};
+
+const mobileTaskActionButtonsStyle = {
+  display: 'flex',
+  gap: '8px',
+  marginTop: '12px',
+  flexWrap: 'wrap'
+};
+
+const mobileStartTaskButtonStyle = {
+  background: 'linear-gradient(135deg, #4e73df 0%, #224abe 100%)',
+  padding: '8px 16px',
+  fontSize: '13px',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontWeight: '600',
+  flex: 1
+};
+
+const mobilePauseTaskButtonStyle = {
+  background: 'linear-gradient(135deg, #858796 0%, #5a5c69 100%)',
+  padding: '8px 12px',
+  fontSize: '12px',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontWeight: '600'
+};
+
+const mobileUpdateCompletionButtonStyle = {
+  background: 'linear-gradient(135deg, #1cc88a 0%, #17a673 100%)',
+  padding: '8px 12px',
+  fontSize: '12px',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontWeight: '600',
+  flex: 1
+};
+
+const mobileNoTasksStyle = {
+  textAlign: 'center',
+  color: '#858796',
+  padding: '24px',
+  fontSize: '14px'
+};
+
+const mobileViewAllLinkStyle = {
+  display: 'block',
+  textAlign: 'center',
+  color: '#4e73df',
+  fontWeight: '600',
+  fontSize: '14px',
+  marginTop: '16px',
+  textDecoration: 'none'
+};
+
+const mobileFeedbackSectionStyle = {
+  marginBottom: '24px'
+};
+
+const mobileFeedbackCardDoerStyle = {
+  background: 'white',
+  padding: '16px',
+  borderRadius: '12px',
+  marginBottom: '12px',
+  borderLeft: '4px solid #1cc88a',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+};
+
+const mobileFeedbackCardPosterStyle = {
+  background: 'white',
+  padding: '16px',
+  borderRadius: '12px',
+  marginBottom: '12px',
+  borderLeft: '4px solid #4e73df',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+};
+
+const mobileFeedbackContentStyle = {
+  display: 'flex',
+  alignItems: 'start',
+  gap: '12px',
+  marginBottom: '12px'
+};
+
+const mobileFeedbackProfilePicStyle = {
+  width: '40px',
+  height: '40px',
+  borderRadius: '50%',
+  objectFit: 'cover'
+};
+
+const mobileFeedbackInfoStyle = {
+  flex: 1
+};
+
+const mobileFeedbackUsernameStyle = {
+  color: '#2e3a59',
+  fontSize: '15px'
+};
+
+const mobileFeedbackTaskStyle = {
+  color: '#858796',
+  fontSize: '13px',
+  marginTop: '4px'
+};
+
+const mobileFeedbackTaskStrongStyle = {
+  color: '#4e73df'
+};
+
+const mobileFeedbackItemStyle = {
+  background: 'white',
+  padding: '16px',
+  borderRadius: '12px',
+  marginBottom: '12px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
+};
+
+const mobileFeedbackHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '8px'
+};
+
+const mobileFeedbackRatingStyle = {
+  fontSize: '14px',
+  color: '#f6c23e'
+};
+
+const mobileFeedbackDateStyle = {
+  fontSize: '12px',
+  color: '#858796'
+};
+
+const mobileFeedbackReviewStyle = {
+  fontSize: '14px',
+  color: '#5a5c69',
+  fontStyle: 'italic',
+  lineHeight: '1.5'
+};
+
+const mobileWalletComingSoonStyle = {
+  background: 'white',
+  padding: '60px 20px',
+  borderRadius: '12px',
+  textAlign: 'center',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+  marginTop: '40px'
+};
+
+const mobileComingSoonTextStyle = {
+  fontSize: '24px',
+  fontWeight: '700',
+  color: '#4e73df',
+  margin: '0 0 12px 0'
+};
+
+const mobileComingSoonSubtextStyle = {
+  fontSize: '14px',
+  color: '#858796',
+  margin: 0
+};
+
+// Mobile Trial Banner Styles
+const mobileTrialBannerStyle = {
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  borderRadius: '16px',
+  padding: '16px',
+  margin: '16px',
+  color: 'white',
+  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+};
+
+const mobileTrialContentStyle = {
+  display: 'flex',
+  alignItems: 'start',
+  gap: '12px',
+  marginBottom: '12px'
+};
+
+const mobileTrialIconStyle = {
+  fontSize: '28px',
+  lineHeight: '1'
+};
+
+const mobileTrialInfoStyle = {
+  flex: 1
+};
+
+const mobileTrialTitleStyle = {
+  fontSize: '16px',
+  fontWeight: '700',
+  margin: '0 0 6px 0',
+  color: 'white'
+};
+
+const mobileTrialTextStyle = {
+  fontSize: '13px',
+  margin: '0 0 6px 0',
+  color: 'rgba(255, 255, 255, 0.95)'
+};
+
+const mobileTrialWarningStyle = {
+  fontSize: '12px',
+  margin: 0,
+  color: 'rgba(255, 255, 255, 0.9)'
+};
+
+const mobileTrialButtonStyle = {
+  width: '100%',
+  padding: '12px',
+  background: 'white',
+  color: '#667eea',
+  border: 'none',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '700',
+  cursor: 'pointer',
+  marginTop: '8px'
+};
 </script>

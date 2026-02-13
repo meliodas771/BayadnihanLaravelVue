@@ -17,12 +17,12 @@ export default defineNuxtPlugin(() => {
   const echo = new Echo({
     broadcaster: 'reverb',
     key: '8vduxcelwduemnhcsond',
-    wsHost: 'localhost',
+    wsHost: '127.0.0.1',
     wsPort: 8080,
     wssPort: 8080,
     forceTLS: false,
     enabledTransports: ['ws', 'wss'],
-    authEndpoint: 'http://localhost:8000/api/broadcasting/auth',
+    authEndpoint: 'http://127.0.0.1:8000/api/broadcasting/auth',
     auth: {
       headers: {
         Authorization: `Bearer ${getAuthToken()}`,

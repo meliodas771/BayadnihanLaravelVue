@@ -141,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useUser } from '~/composables/useUser';
 import { useAPI } from '~/utils/api';
@@ -153,6 +153,7 @@ const { userAPI } = useAPI();
 const userId = route.params.id;
 const user = ref(null);
 const isLoading = ref(true);
+const isMobile = ref(false);
 const stats = ref({
   avgRating: null,
   avgRatingAsPoster: null,
@@ -173,6 +174,16 @@ const showCompletedTasks = computed(() => {
 const showPostedTasks = computed(() => {
   return context.value === 'poster' || context.value === '' || postedTasks.value.length > 0;
 });
+
+const checkMobile = () => {
+  if (process.client) {
+    isMobile.value = window.innerWidth <= 768;
+  }
+};
+
+if (process.client) {
+  checkMobile();
+}
 
 const maskUsername = (username) => {
   if (!username) return '';
@@ -247,6 +258,12 @@ const getProfileStarStyle = (index, rating) => ({
 });
 
 onMounted(async () => {
+  // Setup resize listener
+  if (process.client) {
+    window.addEventListener('resize', checkMobile);
+  }
+  
+  // Fetch profile data
   try {
     isLoading.value = true;
     const response = await userAPI.getPublicProfile(userId);
@@ -275,6 +292,12 @@ onMounted(async () => {
     console.error('Error fetching public profile:', error);
   } finally {
     isLoading.value = false;
+  }
+});
+
+onUnmounted(() => {
+  if (process.client) {
+    window.removeEventListener('resize', checkMobile);
   }
 });
 
@@ -310,7 +333,8 @@ const layoutStyles = `
     .main-content { 
       margin-left: 0; 
       width: 100%; 
-      padding-top: 70px; 
+      padding: 15px !important;
+      padding-top: 70px !important; 
     }
   }
 `;
@@ -323,12 +347,66 @@ useHead({
   ]
 });
 
-const containerStyle = { maxWidth: '1200px', margin: '24px auto', padding: '0 16px' };
-const cardStyle = { background: '#fff', padding: '32px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '24px' };
-const profileSectionStyle = { display: 'flex', gap: '24px', marginBottom: '32px', alignItems: 'center' };
-const profilePicStyle = { width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' };
+const containerStyle = computed(() => {
+  if (isMobile.value) {
+    return { maxWidth: '100%', margin: '0', padding: '0' };
+  }
+  return { maxWidth: '1200px', margin: '24px auto', padding: '0 16px' };
+});
+
+const cardStyle = computed(() => {
+  if (isMobile.value) {
+    return { 
+      background: 'transparent', 
+      padding: '16px', 
+      borderRadius: '0', 
+      boxShadow: 'none', 
+      marginBottom: '0' 
+    };
+  }
+  return { 
+    background: '#fff', 
+    padding: '32px', 
+    borderRadius: '12px', 
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)', 
+    marginBottom: '24px' 
+  };
+});
+
+const profileSectionStyle = computed(() => {
+  if (isMobile.value) {
+    return { 
+      display: 'flex', 
+      gap: '16px', 
+      marginBottom: '20px', 
+      alignItems: 'center',
+      paddingBottom: '20px',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return { 
+    display: 'flex', 
+    gap: '24px', 
+    marginBottom: '32px', 
+    alignItems: 'center' 
+  };
+});
+
+const profilePicStyle = computed(() => {
+  if (isMobile.value) {
+    return { width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' };
+  }
+  return { width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' };
+});
+
 const userInfoStyle = { flex: 1 };
-const usernameStyle = { color: '#2e3a59', fontSize: '24px', marginBottom: '12px' };
+const usernameStyle = computed(() => {
+  if (isMobile.value) {
+    return { color: '#2e3a59', fontSize: '20px', marginBottom: '8px', fontWeight: '600' };
+  }
+  return { color: '#2e3a59', fontSize: '24px', marginBottom: '12px' };
+});
+
 const ratingContainerStyle = { marginBottom: '12px' };
 const ratingLabelStyle = { color: '#858796', fontSize: '13px', marginBottom: '4px', fontWeight: '600' };
 const ratingDisplayStyle = { display: 'flex', alignItems: 'center', gap: '8px' };
@@ -336,11 +414,46 @@ const starsContainerStyle = { display: 'flex', alignItems: 'center' };
 const ratingValueStyle = { color: '#2e3a59', fontSize: '18px', fontWeight: '700' };
 const ratingCountStyle = { color: '#858796', fontSize: '14px' };
 const noReviewsStyle = { color: '#858796', marginTop: '12px', textAlign: 'center', padding: '12px', background: '#f8f9fc', borderRadius: '8px' };
-const statsGridStyle = { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' };
+
+const statsGridStyle = computed(() => {
+  if (isMobile.value) {
+    return { 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(2, 1fr)', 
+      gap: '12px',
+      paddingBottom: '20px',
+      borderBottom: '1px solid #e3e6f0'
+    };
+  }
+  return { 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(2, 1fr)', 
+    gap: '20px' 
+  };
+});
+
 const statCardStyle = { background: '#f8f9fc', padding: '20px', borderRadius: '8px', textAlign: 'center' };
 const statTitleStyle = { color: '#858796', fontSize: '14px', marginTop: '8px' };
 const statValueStyle = { color: '#2e3a59', fontSize: '24px', fontWeight: '700' };
-const sectionTitleStyle = { color: '#2e3a59', fontSize: '20px', marginBottom: '16px' };
+
+const sectionTitleStyle = computed(() => {
+  if (isMobile.value) {
+    return { 
+      color: '#2e3a59', 
+      fontSize: '18px', 
+      marginBottom: '16px',
+      marginTop: '20px',
+      paddingTop: '20px',
+      borderTop: '1px solid #e3e6f0'
+    };
+  }
+  return { 
+    color: '#2e3a59', 
+    fontSize: '20px', 
+    marginBottom: '16px' 
+  };
+});
+
 const taskListStyle = { display: 'flex', flexDirection: 'column', gap: '12px' };
 const taskItemStyle = { padding: '16px', background: '#f8f9fc', borderRadius: '8px' };
 const taskTitleStyle = { color: '#2e3a59', fontSize: '16px', marginBottom: '8px', fontWeight: '600' };
